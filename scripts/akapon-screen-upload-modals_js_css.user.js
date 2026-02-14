@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（アップロード周りモーダル調整｜保存3秒｜YouTube広告｜バージョン更新）※akapon-screen-upload-modals_js_css.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      1.1
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -168,7 +168,10 @@
   #uploadVersionPopup .select-type-animation,
   #uploadNewPagePopup .select-type-animation{
     width: calc(100% - 20px) !important;
-    margin: 16px auto !important;
+
+    /* ✅ 端末差で崩れない：最小16px〜最大33pxの間で自動調整 */
+    margin: clamp(16px, 4vh, 33px) auto !important;
+
     padding: 14px 14px !important;
   }
 
@@ -434,29 +437,84 @@
     window.__akaponShortenUploadTextBound = true;
 
     const SP_MAX = 768;
+    const TICK_MS = 200;
 
-    const shorten = () => {
+    function isSp() {
+      return window.matchMedia(`(max-width:${SP_MAX}px)`).matches;
+    }
+
+    function shortenNow() {
       const nodes = document.querySelectorAll(
-        '#uploadVersionPopup .count-total-version, #uploadNewPagePopup .count-total-version'
+        '#uploadVersionPopup .select-page-box .current-page .count-total-version, ' +
+        '#uploadNewPagePopup .select-page-box .current-page .count-total-version, ' +
+        '#uploadVersionPopup .select-page-box .select-page .count-total-version, ' +
+        '#uploadNewPagePopup .select-page-box .select-page .count-total-version'
       );
 
       nodes.forEach((el) => {
-        const txt = (el.textContent || '').trim();
-        const m = txt.match(/Ver\\s*([0-9]+)\\s*/i);
+        const raw = (el.textContent || '');
+        const txt = raw.replace(/\s+/g, ' ').trim();
+        if (!txt) return;
+
+        // Ver 04 の 04 も保持
+        const m = txt.match(/Ver\s*([0-9]{1,3})/i);
         if (!m) return;
 
+        // 「アップロード」系だけ対象にする（誤爆防止）
+        if (!txt.includes('アップロード')) return;
+
+        // 元テキストはSP以外に戻すために保存
         if (!el.dataset.originalText) el.dataset.originalText = txt;
 
-        if (window.matchMedia(`(max-width:${SP_MAX}px)`).matches) {
-          el.textContent = `Ver ${m[1]} にアップロード`;
+        if (isSp()) {
+          const desired = `Ver ${m[1]} にアップロード`;
+          if (txt !== desired) el.textContent = desired;
         } else {
-          if (el.dataset.originalText) el.textContent = el.dataset.originalText;
+          if (el.dataset.originalText && el.textContent !== el.dataset.originalText) {
+            el.textContent = el.dataset.originalText;
+          }
         }
       });
-    };
+    }
 
-    shorten();
-    window.addEventListener('resize', shorten);
+    // ✅ ポップアップが存在する間だけ定期実行（確実＆軽量）
+    let timer = null;
+
+    function startTick() {
+      if (timer) return;
+      timer = setInterval(() => {
+        // popupが無いなら止める
+        const hasPopup =
+          document.querySelector('#uploadVersionPopup') ||
+          document.querySelector('#uploadNewPagePopup');
+        if (!hasPopup) {
+          clearInterval(timer);
+          timer = null;
+          return;
+        }
+        shortenNow();
+      }, TICK_MS);
+    }
+
+    // 初回
+    shortenNow();
+    startTick();
+
+    // popup出現も拾う（出たらtick開始＆即短縮）
+    const mo = new MutationObserver(() => {
+      const hasPopup =
+        document.querySelector('#uploadVersionPopup') ||
+        document.querySelector('#uploadNewPagePopup');
+      if (hasPopup) {
+        shortenNow();
+        startTick();
+      }
+    });
+
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    // リサイズでも即反映
+    window.addEventListener('resize', shortenNow);
   }
 
   /* =========================================================
