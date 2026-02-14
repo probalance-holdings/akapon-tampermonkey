@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（プロジェクト｜検索・絞り込み）※akapon-project-hide-filter-search_css.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      1.1
 // @match        https://member.createcloud.jp/*
 // @match        https://akapon.jp/*
 // @match        https://akapon.jp/ai/*
@@ -260,7 +260,7 @@ table.search-list *{
 
   background: #fff !important;
   border-radius: 14px !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 
   /* ✅ 黒線を消してシャドーのみ */
   border: none !important;
@@ -454,6 +454,17 @@ table.search-list *{
   z-index: 1000000 !important;
 }
 
+/* --- カレンダー（qs-datepicker）のサイズを小さくする --- */
+.filter-content.dropdown-new-stype .qs-datepicker-container{
+  transform: scale(0.86) !important;
+  transform-origin: top left !important;
+}
+
+/* 文字・余白が大きい場合の追加圧縮（必要最低限） */
+.filter-content.dropdown-new-stype .qs-datepicker-container .qs-datepicker{
+  font-size: 12px !important;
+}
+
 /* =========================================================
    親モーダル：選択個数バッジ（0は非表示 / 1以上は中央・白文字）
    ========================================================= */
@@ -607,6 +618,38 @@ table.search-list *{
 }
 
 /* =========================================================
+   fix: 選択中ステータスに ✓ を表示して分かりやすくする
+   （選択時に付く .slted を利用）
+   ========================================================= */
+.filter-content.dropdown-new-stype.status-filter .dropdown-body .option.slted{
+  position: relative !important;
+  padding-right: 44px !important; /* ✓バッジ分 */
+}
+
+.filter-content.dropdown-new-stype.status-filter .dropdown-body .option.slted::after{
+  content: "✓" !important;
+  position: absolute !important;
+  right: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+
+  background: #1e3c72 !important;
+  color: #fff !important;
+
+  font-weight: 900 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* =========================================================
    絞り込みボタン：件数バッジ（0は非表示 / 中央寄せ / 少し大きく）
    ========================================================= */
 
@@ -652,6 +695,107 @@ td.td-filter-box .border-new.filter-btn .number[data-tm-zero="1"]{
 
 /* もし●（背景色）が別で付いているなら、中央寄せも一緒に */
 .filter-common-all.dropdown-new-stype .select-filter .count-filter{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* =========================================================
+   fix: カレンダーがモーダル内で切れるのを最終的に防ぐ
+   （他CSSの overflow:hidden を確実に上書きする）
+   ========================================================= */
+html body .filter-content.dropdown-new-stype{
+  overflow: visible !important;
+}
+html body .filter-content.dropdown-new-stype .dropdown-body{
+  overflow: visible !important;
+}
+html body .filter-content.dropdown-new-stype .filter-content-scroll{
+  overflow: visible !important;
+}
+html body .filter-content.dropdown-new-stype .qs-datepicker-container{
+  z-index: 1000000 !important;
+}
+
+/* =========================================================
+   fix: 件数modal（表示件数）でも選択中に ✓ を表示
+   ========================================================= */
+.filter-content.filter-content-number-record.dropdown-new-stype .dropdown-body .option.slted{
+  position: relative !important;
+  padding-right: 44px !important; /* ✓バッジ分 */
+}
+
+.filter-content.filter-content-number-record.dropdown-new-stype .dropdown-body .option.slted::after{
+  content: "✓" !important;
+  position: absolute !important;
+  right: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+
+  background: #1e3c72 !important;
+  color: #fff !important;
+
+  font-weight: 900 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* =========================================================
+   fix: 件数modal（表示件数）を「左寄せ + ✓は右」にして崩れを解消
+   ========================================================= */
+
+/* text-center 指定があっても左寄せで表示する */
+.filter-content.filter-content-number-record.dropdown-new-stype .dropdown-body.search.text-center{
+  text-align: left !important;
+  padding: 0 !important; /* 余計なズレ防止（必要なら外してOK） */
+}
+
+/* 各行を横並び：左に数字、右に✓ */
+.filter-content.filter-content-number-record.dropdown-new-stype .dropdown-body.search.text-center .option{
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+
+  width: 100% !important;
+  padding: 10px 44px 10px 16px !important; /* 右は✓分、左は余白 */
+  margin: 0 !important;
+
+  border-radius: 10px !important;
+}
+
+/* hover/選択時の見やすさ（任意：既存のグレー枠があるなら残してOK） */
+.filter-content.filter-content-number-record.dropdown-new-stype .dropdown-body.search.text-center .option.slted{
+  background: rgba(0,0,0,.06) !important;
+}
+
+/* ✓は右に固定（既存の✓CSSがあっても件数modalだけ上書き） */
+.filter-content.filter-content-number-record.dropdown-new-stype .dropdown-body.search.text-center .option.slted::after{
+  content: "✓" !important;
+  position: absolute !important;
+  right: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+
+  background: #1e3c72 !important;
+  color: #fff !important;
+
+  font-weight: 900 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
