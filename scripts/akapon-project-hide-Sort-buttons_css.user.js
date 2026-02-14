@@ -7,6 +7,8 @@
 // @match        https://akapon.jp/ai/*
 // @run-at       document-idle
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-hide-Sort-buttons_css.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-hide-Sort-buttons_css.user.js
 // ==/UserScript==
 
 (() => {
