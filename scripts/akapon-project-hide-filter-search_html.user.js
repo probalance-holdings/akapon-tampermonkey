@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（プロジェクト｜検索・絞り込み-HTML）※akapon-project-hide-filter-search_html.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      1.1
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -27,7 +27,7 @@
   <div class="dropdown-header d-flex justify-content-between">
     <div class="d-flex align-items-center cursor-pointer"
          onclick="SearchForm.selectFilterDisplay('toggle', '.filter-common-all', event)">
-      全てのフィルター
+      検索・絞り込み
     </div>
     <div class="d-flex">
       <button type="button" class="reset-data-all" onclick="SearchForm.resetDataSearchAll(this)">クリア</button>&nbsp;&nbsp;&nbsp;
