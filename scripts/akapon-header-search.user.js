@@ -4,6 +4,7 @@
 // @version      1.0
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
+// @grant        none
 // @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
 // @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
 // ==/UserScript==
