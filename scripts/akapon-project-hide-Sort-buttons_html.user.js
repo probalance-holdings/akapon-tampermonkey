@@ -10,6 +10,16 @@
 // ==/UserScript==
 
 (() => {
+
+  /* =========================================================
+     NOTE（作成日について）
+     - この一覧ページDOMには作成日そのものの値が無い
+       （consoleで日付候補・created系属性を検索しても0件）
+     - sort_by[created_at] もHTML内に存在しないため、
+       Tampermonkey / console だけで「作成日」を特定・ソートするのは不可
+     - 現状の「作成日（ダミー）」は updated_at を流用している
+     ========================================================= */
+
   const FLAG_ATTR = 'data-tm-sort-html-applied';
   const RECHECK_MS = 500;
 
@@ -68,7 +78,7 @@
       </li>
 
       <li class="li-sort-item" onclick="$(this).toggleClass('active')">
-        <div class="sort_item ">Status
+        <div class="sort_item ">ステータス
         </div>
         <ul>
           <li onclick="Visiable.toggle('#sortBox')" class="sort-option ">
