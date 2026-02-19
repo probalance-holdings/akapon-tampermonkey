@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（右上アバター※akapon-avatar_html_css.user.js
+// @name         12｜アカポン（右上アバター※akapon-avatar_html_css.user.js
 // @namespace    akapon
 // @version      1.0
 // @match        https://member.createcloud.jp/*
