@@ -3,6 +3,8 @@
 // @namespace    akapon
 // @version      2.1
 // @match        https://member.createcloud.jp/*
+// @match        https://akapon.jp/*
+// @match        https://kanritools.com/*
 // @run-at       document-start
 // @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-help-search.user.js
 // @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-help-search.user.js
@@ -10,6 +12,190 @@
 
 (() => {
   'use strict';
+
+  // =========================================================
+  // WEB側（akapon.jp / kanritools.com）: embed=1 の時だけ「本文だけ表示」に整形
+  // - 管理画面側(member.createcloud.jp)のCSSでは iframe内DOMを触れないため、WEB側でも同一scriptを動かす
+  // - ここでreturnして、管理画面向けロジックは一切走らせない
+  // =========================================================
+  (function applyWebEmbedView() {
+    const host = location.hostname || '';
+    const isWebSide = (host === 'akapon.jp' || host === 'kanritools.com');
+    if (!isWebSide) return;
+
+    const params = new URLSearchParams(location.search || '');
+    if (params.get('embed') !== '1') return;
+
+    const css = `
+/* =========================================================
+   WEB側 embed=1 表示最適化（ヘルプ/FAQ共通）
+   - ヘッダー/フッター/サイドを消して本文だけ
+   - 余白を上下左右ゼロ
+   - サイドが消えた分、本文をフル幅化（右の余白を消す）
+   ========================================================= */
+
+html, body{
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+
+  /* height:auto はスクロール二重化の原因になる */
+  height: 100vh !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+/* 余計な枠（ご指定） */
+.header-container,
+footer.site-footer,
+.right-sidebar,
+aside.column-sidebar{
+  display: none !important;
+}
+
+/* 念のため：サイト共通のヘッダー/ナビ/フッター系 */
+header,
+.site-header,
+nav,
+footer{
+  display: none !important;
+}
+
+/* 「空の見出し」が作る空白を潰す（ご指摘の箇所） */
+.page_name.sticky-title{
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.page_name.sticky-title h1{
+  display: none !important;
+}
+
+/* embed用の上部バー（閉じる×）は残し、先頭に固定 */
+.akapon-help-header{
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2147483646 !important;
+  margin: 0 !important;
+}
+
+/* 本文側をフル幅（サイドが消えた分の右余白を消す） */
+/* =========================================================
+   本文レイアウト修正（中央寄せを復活）
+   ========================================================= */
+
+/* column-wrapper をフル幅固定しない */
+/* ページ側の width:100% !important を確実に上書きする */
+html body .column-wrapper,
+body .column-wrapper,
+.wrapper .column-wrapper,
+.column-wrapper.column-wrapper{
+  display: flex !important;
+
+  max-width: 1550px !important;
+  width: auto !important;                 /* ← 100% を潰す */
+
+  margin-left: auto !important;
+  margin-right: auto !important;
+
+  justify-content: center !important;
+  align-items: flex-start !important;
+
+  padding: 0 20px !important;
+  gap: 20px !important;
+
+  position: relative !important;
+}
+
+/* 本文コンテンツは横幅固定しない */
+.container,
+.main-content,
+.content,
+.content-area,
+#content,
+#main,
+main,
+article{
+  max-width: 1550px !important;
+  width: auto !important;              /* ← 100%削除 */
+  margin: 0 auto !important;
+}
+
+/* よくある2カラムの「本文カラム」もフル幅化 */
+.column-main,
+.primary,
+#primary{
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+/* よくあるwrapperの余白を削除 */
+.wrap,
+.wrapper,
+.inner,
+.content-wrapper,
+.main-wrapper{
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* =========================================================
+   不要パーツ完全非表示
+   ========================================================= */
+
+.breadcrumb,
+.breadcrumb-wrapper,
+.search-box,
+#consultationButton,
+#consultationButtonHelp,
+.consultButtonWrapper,
+.qanda_block_header,
+.sticky-search,
+#collapseConsult,
+button#collapseConsult,
+.consult-collapse-btn{
+  display: none !important;
+}
+
+/* wrapper 上部余白：最強CSSで上書き */
+html body .wrapper,
+body .wrapper,
+.wrapper{
+  padding-top: 40px !important;
+}
+
+.search-box *{
+  display: none !important;
+}
+
+/* column-wrapper の width:100% !important を確実に潰す（中央寄せ） */
+html body .column-wrapper,
+body .column-wrapper,
+.wrapper .column-wrapper,
+.column-wrapper.column-wrapper{
+  width: auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  justify-content: center !important;
+}
+
+`.trim();
+
+    const style = document.createElement('style');
+    style.id = 'akapon-web-embed-style';
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode(css));
+    (document.head || document.documentElement).appendChild(style);
+
+    // WEB側はここで終了（管理画面側の処理は走らせない）
+    return;
+  })();
 
   // =========================================================
   // 設定（検索modal系のみ）
@@ -275,6 +461,7 @@
     display: none !important;
   }
 }
+
 `;
   }
 
@@ -389,38 +576,64 @@
   // 開閉
   // =========================================================
   function openRight() {
-    if (!isPc()) return;
-    const ov = document.getElementById(OVERLAY_ID);
-    const r  = document.getElementById(RIGHT_ID);
-    if (!ov || !r) return;
-    ov.classList.add('is-open');
-    r.classList.add('is-open');
-  }
+  if (!isPc()) return;
+  const ov = document.getElementById(OVERLAY_ID);
+  const r  = document.getElementById(RIGHT_ID);
+  if (!ov || !r) return;
 
-  function closeAll() {
-    const ov = document.getElementById(OVERLAY_ID);
-    const r  = document.getElementById(RIGHT_ID);
-    const l  = document.getElementById(LEFT_ID);
-    if (ov) ov.classList.remove('is-open');
-    if (r)  r.classList.remove('is-open');
-    if (l)  l.classList.remove('is-open');
-  }
+  // 追加：WEB側レイアウト簡易化をON
+  document.body.classList.add('akapon-search-open');
 
-  function closeLeftOnly() {
-    const l = document.getElementById(LEFT_ID);
-    if (l) l.classList.remove('is-open');
-  }
+  ov.classList.add('is-open');
+  r.classList.add('is-open');
+}
+
+function closeAll() {
+  const ov = document.getElementById(OVERLAY_ID);
+  const r  = document.getElementById(RIGHT_ID);
+  const l  = document.getElementById(LEFT_ID);
+
+  if (ov) ov.classList.remove('is-open');
+  if (r)  r.classList.remove('is-open');
+  if (l)  l.classList.remove('is-open');
+
+  // 追加：WEB側レイアウト簡易化をOFF
+  document.body.classList.remove('akapon-search-open');
+}
+
+function closeLeftOnly() {
+  const l = document.getElementById(LEFT_ID);
+  if (l) l.classList.remove('is-open');
+
+  // 左だけ閉じるなら、右（検索）が開いている間は class を残す
+  // ※ここでは remove しない
+}
 
   function openLeftWithUrl(url) {
-    if (!isPc()) return;
+  if (!isPc()) return;
 
-    const l = document.getElementById(LEFT_ID);
-    const ifr = document.getElementById(LEFT_IFR);
-    if (!l || !ifr) return;
+  const l = document.getElementById(LEFT_ID);
+  const ifr = document.getElementById(LEFT_IFR);
+  if (!l || !ifr) return;
 
-    ifr.src = url;
-    l.classList.add('is-open');
+  // URLに embed=1 を付与（既にクエリがあっても壊さない）
+  let nextUrl = String(url || '').trim();
+  if (!nextUrl) return;
+
+  try {
+    const u = new URL(nextUrl, location.href);
+    if (!u.searchParams.has('embed')) u.searchParams.set('embed', '1');
+    nextUrl = u.toString();
+  } catch (e) {
+    // URLとして解釈できない場合はそのまま（ここでは無理に加工しない）
   }
+
+  // URL 反映
+  ifr.src = nextUrl;
+
+  // 左を開く（右は開いたまま＝検索継続）
+  l.classList.add('is-open');
+}
 
   function isRightOpen() {
     const r = document.getElementById(RIGHT_ID);
