@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（校正画面｜動画を◀▶で5秒早送｜巻き戻す※akapon-screen-Rewind_js.user.js
+// @name         8｜アカポン（校正画面｜動画を◀▶で5秒早送｜巻き戻す※akapon-screen-Rewind_js.user.js
 // @namespace    akapon
 // @version      1.0
 // @match        https://member.createcloud.jp/*
