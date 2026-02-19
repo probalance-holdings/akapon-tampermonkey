@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜並び替え-HTML）※akapon-project-hide-Sort-buttons_html.user.js
+// @name         5｜アカポン（プロジェクト｜並び替え-HTML）※akapon-project-hide-Sort-buttons_html.user.js
 // @namespace    akapon
 // @version      1.2
 // @match        https://member.createcloud.jp/*
