@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜検索・絞り込み）※akapon-project-hide-filter-search_css.user.js
+// @name         2｜アカポン（プロジェクト｜検索・絞り込み）※akapon-project-hide-filter-search_css.user.js
 // @namespace    akapon
-// @version      1.1
+// @version      1.0
 // @match        https://member.createcloud.jp/*
 // @match        https://akapon.jp/*
 // @match        https://akapon.jp/ai/*
@@ -20,25 +20,38 @@
    ========================================================= */
 
 /* ====== Parent filter modal: center modal look ====== */
-.filter-common-all.dropdown-new-stype{
+html body .filter-common-all.dropdown-new-stype{
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
   width: 86% !important;
   max-width: 420px !important;
+
   background: #fff !important;
+
   border-radius: 14px !important;
   overflow: hidden !important;
+
+  /* clip-path は shadow が消える環境があるので使わない */
+  /* clip-path: inset(0 round 14px) !important; */
+
   box-shadow: 0 16px 38px rgba(0, 0, 0, .28) !important;
   z-index: 999999 !important;
   margin: 0 !important;
   border: none !important;
 }
-.filter-common-all.dropdown-new-stype:not(.d-none){
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+
+/* ヘッダーが角を塗りつぶすケース対策 */
+html body .filter-common-all.dropdown-new-stype .dropdown-header{
+  border-top-left-radius: 14px !important;
+  border-top-right-radius: 14px !important;
+}
+
+/* 下側（body）が角を塗りつぶすケース対策：ここがポイント */
+html body .filter-common-all.dropdown-new-stype .dropdown-body{
+  border-bottom-left-radius: 14px !important;
+  border-bottom-right-radius: 14px !important;
 }
 
 /* Header */
@@ -495,10 +508,11 @@ table.search-list *{
 
 /* =========================================================
    qs-datepicker（カレンダー）を “かっこよく” 調整
+   ※ body直下生成にも対応するため、モーダル限定セレクタを外す
    ========================================================= */
 
 /* カレンダー本体の枠 */
-.filter-content.dropdown-new-stype .qs-datepicker{
+.qs-datepicker{
   border: none !important;
   border-radius: 14px !important;
   overflow: hidden !important;
@@ -507,19 +521,19 @@ table.search-list *{
 }
 
 /* 上部コントロール（年月＋矢印） */
-.filter-content.dropdown-new-stype .qs-datepicker .qs-controls{
+.qs-datepicker .qs-controls{
   background: linear-gradient(90deg,#1e3c72,#555) !important;
   color: #fff !important;
   padding: 10px 12px !important;
   border: none !important;
 }
-.filter-content.dropdown-new-stype .qs-datepicker .qs-controls *{
+.qs-datepicker .qs-controls *{
   color: #fff !important;
   font-weight: 800 !important;
 }
 
 /* 矢印を少し大きく・押しやすく */
-.filter-content.dropdown-new-stype .qs-datepicker .qs-arrow{
+.qs-datepicker .qs-arrow{
   width: 34px !important;
   height: 34px !important;
   border-radius: 10px !important;
@@ -528,19 +542,19 @@ table.search-list *{
   justify-content: center !important;
   opacity: .95 !important;
 }
-.filter-content.dropdown-new-stype .qs-datepicker .qs-arrow:hover{
+.qs-datepicker .qs-arrow:hover{
   background: rgba(255,255,255,.14) !important;
 }
 
 /* 曜日行 */
-.filter-content.dropdown-new-stype .qs-datepicker .qs-squares .qs-day{
+.qs-datepicker .qs-squares .qs-day{
   font-weight: 800 !important;
   color: rgba(0,0,0,.55) !important;
   padding: 8px 0 !important;
 }
 
 /* 日付セル */
-.filter-content.dropdown-new-stype .qs-datepicker .qs-squares .qs-num{
+.qs-datepicker .qs-squares .qs-num{
   border-radius: 10px !important;
   margin: 2px !important;
   padding: 10px 0 !important;
@@ -549,25 +563,42 @@ table.search-list *{
 }
 
 /* hover */
-.filter-content.dropdown-new-stype .qs-datepicker .qs-squares .qs-num:hover{
+.qs-datepicker .qs-squares .qs-num:hover{
   background: rgba(30,60,114,.10) !important;
   color: #1e3c72 !important;
 }
 
 /* 選択中（qs-active / qs-current どちらにも対応） */
-.filter-content.dropdown-new-stype .qs-datepicker .qs-squares .qs-num.qs-active,
-.filter-content.dropdown-new-stype .qs-datepicker .qs-squares .qs-num.qs-current{
+.qs-datepicker .qs-squares .qs-num.qs-active,
+.qs-datepicker .qs-squares .qs-num.qs-current{
   background: #1e3c72 !important;
   color: #fff !important;
 }
 
 /* 無効日 */
-.filter-content.dropdown-new-stype .qs-datepicker .qs-squares .qs-num.qs-disabled{
+.qs-datepicker .qs-squares .qs-num.qs-disabled{
   opacity: .35 !important;
 }
 
-/* カレンダーを前面に（既に入れてるなら重複OKだけど、無ければ） */
-.filter-content.dropdown-new-stype .qs-datepicker-container{
+/* カレンダーを前面に（body直下生成でもOK） */
+.qs-datepicker-container{
+  z-index: 1000000 !important;
+}
+
+/* =========================================================
+   fix: カレンダーが「何か」によって切れるのを防ぐ（保険）
+   ※ body直下生成には overflow は関係ないが、既存を壊さない範囲で残す
+   ========================================================= */
+html body .filter-content.dropdown-new-stype{
+  overflow: visible !important;
+}
+html body .filter-content.dropdown-new-stype .dropdown-body{
+  overflow: visible !important;
+}
+html body .filter-content.dropdown-new-stype .filter-content-scroll{
+  overflow: visible !important;
+}
+html body .filter-content.dropdown-new-stype .qs-datepicker-container{
   z-index: 1000000 !important;
 }
 
@@ -654,34 +685,47 @@ table.search-list *{
    ========================================================= */
 
 /* ●（バッジ）のベース：丸＋中央寄せ */
+/* =========================================================
+   絞り込みボタン：件数バッジ（0は非表示 / 中央寄せ / 少し大きく）
+   - 初期表示で "0" が一瞬見える問題対策：
+     バッジはデフォルト非表示にして、非0確定時だけ表示する
+   ========================================================= */
+
+/* ●（バッジ）のベース：見た目は同じ（※displayはここで付けない） */
 td.td-filter-box .border-new.filter-btn .number{
-  display: inline-flex !important;
+  /* ✅ 初期は必ず非表示（0フラッシュ根絶） */
+  display: none !important;
+
   align-items: center !important;
   justify-content: center !important;
 
-  width: 22px !important;          /* ← 少し大きく */
+  width: 22px !important;
   height: 22px !important;
   border-radius: 999px !important;
 
-  font-size: 13px !important;      /* ← 少し大きく */
+  font-size: 13px !important;
   font-weight: 800 !important;
 
-  background: #e53935 !important;  /* ●の色（必要なら変更） */
-  color: #fff !important;          /* 数字は白 */
+  background: #e53935 !important;
+  color: #fff !important;
 
   line-height: 1 !important;
   padding: 0 !important;
+
+  text-indent: 0 !important;
 }
 
-/* ❶ 0 の時は非表示（テキストが "0" の場合） */
+/* ❶ 空は非表示のまま */
 td.td-filter-box .border-new.filter-btn .number:empty{
   display: none !important;
 }
 
-/* textContent が "0" のケースは :empty では消えないので、"0" 表示を潰す */
-td.td-filter-box .border-new.filter-btn .number{
-  text-indent: 0 !important;
+/* ✅ 非0（= data-tm-zero="0"）の時だけ表示 */
+td.td-filter-box .border-new.filter-btn .number[data-tm-zero="0"]{
+  display: inline-flex !important;
 }
+
+/* ✅ 0 の時は非表示 */
 td.td-filter-box .border-new.filter-btn .number[data-tm-zero="1"]{
   display: none !important;
 }
@@ -698,23 +742,6 @@ td.td-filter-box .border-new.filter-btn .number[data-tm-zero="1"]{
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-}
-
-/* =========================================================
-   fix: カレンダーがモーダル内で切れるのを最終的に防ぐ
-   （他CSSの overflow:hidden を確実に上書きする）
-   ========================================================= */
-html body .filter-content.dropdown-new-stype{
-  overflow: visible !important;
-}
-html body .filter-content.dropdown-new-stype .dropdown-body{
-  overflow: visible !important;
-}
-html body .filter-content.dropdown-new-stype .filter-content-scroll{
-  overflow: visible !important;
-}
-html body .filter-content.dropdown-new-stype .qs-datepicker-container{
-  z-index: 1000000 !important;
 }
 
 /* =========================================================
@@ -801,6 +828,60 @@ html body .filter-content.dropdown-new-stype .qs-datepicker-container{
   justify-content: center !important;
 }
 
+/* =========================================================
+   更新日フィルター：作成日と同じデザインを適用
+   ========================================================= */
+
+.filter-content.dropdown-new-stype input[name="q[updated_at_gteq]"],
+.filter-content.dropdown-new-stype input[name="q[updated_at_lteq]"]{
+  width: 220px !important;
+  max-width: 220px !important;
+
+  height: 42px !important;
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+
+  background: #fff !important;
+  color: #111 !important;
+
+  border: 1px solid rgba(0,0,0,.12) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.22) !important;
+
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+
+  outline: none !important;
+}
+
+.filter-content.dropdown-new-stype input[name="q[updated_at_gteq]"][readonly],
+.filter-content.dropdown-new-stype input[name="q[updated_at_lteq]"][readonly]{
+  cursor: pointer !important;
+}
+
+/* =========================================================
+   body直下に生成される qs-datepicker 用（更新日対策）
+   ※作成日など既存挙動は壊さない
+   ========================================================= */
+
+body > .qs-datepicker-container{
+  z-index: 1000000 !important;
+}
+
+body > .qs-datepicker-container .qs-datepicker{
+  border: none !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  box-shadow: 0 16px 38px rgba(0,0,0,.28) !important;
+  background: #fff !important;
+}
+
+.filter-content.dropdown-new-stype input[name="q[updated_at_gteq]"],
+.filter-content.dropdown-new-stype input[name="q[updated_at_lteq]"]{
+  position: relative !important;
+  z-index: 5 !important;
+  pointer-events: auto !important;
+}
+
 `;
 
   function injectCssOnce() {
@@ -817,12 +898,18 @@ html body .filter-content.dropdown-new-stype .qs-datepicker-container{
   injectCssOnce();
 
   // 0 のときだけバッジを非表示にするため、data 属性を付与（軽量）
-  setInterval(() => {
+  const applyFilterBadgeZeroState = () => {
     document.querySelectorAll('td.td-filter-box .border-new.filter-btn .number').forEach(el => {
       const v = (el.textContent || '').trim();
       el.dataset.tmZero = (v === '0') ? '1' : '0';
     });
-  }, 500);
+  };
+
+  // ✅ ページ入った瞬間の "0" フラッシュ対策：初回は即時に1回だけ実行
+  applyFilterBadgeZeroState();
+
+  // ✅ その後は従来通り（描画タイミングやSPA遷移に追従）
+  setInterval(applyFilterBadgeZeroState, 500);
 
   // URL変化時だけ再注入（軽量）
   let lastHref = location.href;
