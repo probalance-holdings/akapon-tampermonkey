@@ -229,6 +229,20 @@ html body #navbar-common .dropdown-menu.akapon .dropdown-item:hover{
   background: rgba(30, 60, 114, 0.08) !important;
 }
 
+/* =========================================================
+   TM: 特定メニューだけ太字解除（「一時保管フォルダー」）
+   - href が /akaire_feature/akaires/list_temp_file のものだけ対象
+   ========================================================= */
+html body a.custom-nav-link[href="/akaire_feature/akaires/list_temp_file"],
+html body a.custom-nav-link[href="/akaire_feature/akaires/list_temp_file"] > span{
+  font-weight: 400 !important; /* 太字解除 */
+}
+
+/* TM: 右側に余白 10px（このメニューだけ） */
+html body a.custom-nav-link[href="/akaire_feature/akaires/list_temp_file"]{
+  padding-right: 30px !important;
+}
+
 `;
   }
 
