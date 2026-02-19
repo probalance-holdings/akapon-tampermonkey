@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜ID～件数ボタンを非表示)※akapon-project-hide-filter-buttons-close_html.user.js
+// @name         4｜アカポン（プロジェクト｜ID～件数ボタンを非表示)※akapon-project-hide-filter-buttons-close_html.user.js
 // @namespace    akapon
 // @version      1.1
 // @match        https://member.createcloud.jp/*
