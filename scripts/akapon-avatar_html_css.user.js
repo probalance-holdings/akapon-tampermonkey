@@ -5,8 +5,6 @@
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-avatar_html_css.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-avatar_html_css.user.js
 // ==/UserScript==
 
 (() => {
@@ -311,11 +309,47 @@ ${MENU_SELECTOR} .avatar-modal-icon{
   }
 
   /* =========================
+     PC: dropdown を右上に寄せて固定
+     - Popper の transform 位置決めを無効化し、
+       右上アバターボタン基準で top/right を再計算する
+  ========================= */
+  function positionAvatarDropdownPC(menuEl) {
+    if (!menuEl) return;
+    if (window.matchMedia('(max-width: 768px)').matches) return;
+
+    const avatarBtn = document.querySelector(AVATAR_BTN_SELECTOR);
+    if (!avatarBtn) return;
+
+    const rect = avatarBtn.getBoundingClientRect();
+
+    // 右端の余白（好みで調整できるが、まずは安全値）
+    const margin = 4;
+
+    // ボタン右端からの距離 = viewport右端 - ボタン右端
+    const right = Math.max(margin, Math.round(window.innerWidth - rect.right));
+    const top = Math.round(rect.bottom + margin);
+
+    // Popper/Bootstrap の inline transform を無効化して right/top で固定
+    menuEl.style.position = 'fixed';
+    menuEl.style.top = `${top}px`;
+    menuEl.style.right = `${right}px`;
+    menuEl.style.left = 'auto';
+    menuEl.style.transform = 'none';
+    menuEl.style.marginRight = '0';
+
+    // 念のため（既存より前に出す）
+    menuEl.style.zIndex = '1060';
+  }
+
+  /* =========================
      dropdown の中身を整形
   ========================= */
   function customizeAvatarDropdown(menuEl) {
     if (!menuEl) return;
     if (menuEl.dataset.tmAvatarCustomized === '1') return;
+
+    // ★追加：PC時は右寄せ位置を先に確定
+    positionAvatarDropdownPC(menuEl);
 
     // 1) 不要項目を非表示（添付にないもの）
       const removeSelectors = [
@@ -416,6 +450,28 @@ ${MENU_SELECTOR} .avatar-modal-icon{
   }
 
 /* =========================
+   SP: モーダル表示時のフォーカスを正規化
+   - iframe に残るフォーカスが aria-hidden 警告の原因になりやすい
+   - ここでは「ぼかす（blur）」＋「modalへ focus」だけを行う（副作用最小）
+========================= */
+function normalizeFocusForProfileModal(modalEl) {
+  if (!modalEl) return;
+
+  // iframe 等に残っているフォーカスを外す（iOS Safari 対策）
+  const ae = document.activeElement;
+  if (ae && ae !== document.body && typeof ae.blur === 'function') {
+    try { ae.blur(); } catch (e) {}
+  }
+
+  // modal にフォーカス（tabindex=-1 なので可能）
+  if (typeof modalEl.focus === 'function') {
+    setTimeout(() => {
+      try { modalEl.focus(); } catch (e) {}
+    }, 0);
+  }
+}
+
+/* =========================
    SPプロフィールModal（#profileModal）整形
    - PCと同じ情報に統一
    - SPは文字サイズ/余白をSP用に
@@ -425,6 +481,9 @@ function customizeProfileModalSP() {
 
   const modal = document.querySelector('#profileModal.modal.show');
   if (!modal) return;
+
+  // 追加：フォーカスを正規化（警告と操作ブレを抑える）
+  normalizeFocusForProfileModal(modal);
 
   const content = modal.querySelector('.modal-content.profile-modal');
   const body = modal.querySelector('.modal-body');
@@ -495,6 +554,9 @@ function customizeProfileModalSP() {
   `.trim();
 
   modal.dataset.tmAvatarCustomizedSp = '1';
+
+  // 追加：DOM差し替え後もフォーカスを modal 側へ寄せる
+  normalizeFocusForProfileModal(modal);
 }
 
   /* =========================
@@ -623,29 +685,117 @@ function replaceSpAvatarIconToGear() {
   img.style.padding = '0';
 }
 
+/* =========================
+   追加：アバターメニュー「ヘルプ」→ 検索モーダルを開く
+   - 既存のWEB遷移(https://kanritools.com/help/)は使わず、
+     管理画面側の検索ボタン（#akapon-help-btn）を押す
+   - dropdown / profileModal 内の「ヘルプ」だけ対象
+========================= */
+function bindHelpSearchOpenFromAvatar() {
+  if (window.__tmHelpSearchFromAvatarBound) return;
+  window.__tmHelpSearchFromAvatarBound = true;
+
+  const handler = (e) => {
+    const t = e.target;
+    if (!t || typeof t.closest !== 'function') return;
+
+    const a = t.closest('a');
+    if (!a) return;
+
+    // ✅ 対象範囲：PCの右上アバタードロップダウン（MENU_SELECTOR） or SPの profileModal
+    const inAvatarMenu =
+      a.closest(MENU_SELECTOR) ||
+      a.closest('#profileModal');
+
+    if (!inAvatarMenu) return;
+
+    // 「ヘルプ」文言で判定（class入替があるためテキスト基準にする）
+    const label = (a.textContent || '').replace(/\s+/g, '').trim();
+    if (label !== 'ヘルプ') return;
+
+    const helpBtn = document.getElementById('akapon-help-btn');
+    if (!helpBtn) return;
+
+    // ✅ 既存の target="_blank" 遷移を潰す
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation?.();
+
+    helpBtn.click();
+  };
+
+  // ✅ target=_blank の先行動作対策：pointerdown を最優先で潰す
+  document.addEventListener('pointerdown', handler, true);
+  document.addEventListener('click', handler, true);
+  document.addEventListener('auxclick', handler, true);
+}
+
 function init() {
   injectCss();
   bindAccordion();
   bindCloseOnOutsideClick();
   watchDropdownOpen();
 
+  // 追加
+  bindHelpSearchOpenFromAvatar();
+
   // 初回表示時点でも歯車化（クリック前対応）
   replaceSpAvatarIconToGear();
 
-  // SP: 右上アバターの差し戻し/再描画に負けないための軽量監視
-  // - btn-side-bar は除外
-  // - src が戻された/要素が差し替わった場合に再度歯車化
-  if (window.matchMedia('(max-width: 768px)').matches) {
+  // SP判定は1回だけにまとめる（重複排除）
+  const isSP = window.matchMedia('(max-width: 768px)').matches;
+
+  if (isSP) {
+
+    /* =========================================================
+       SP: 右上アバター監視（対象を絞って軽量化）
+       - btn-side-bar は除外
+       - src/class/style の「戻し（属性変更）」を拾って再度歯車化
+       - body全体の attributes 監視は重いので、右上アバターimgに限定
+       ========================================================= */
     const moSpAvatar = new MutationObserver(() => {
       replaceSpAvatarIconToGear();
     });
-    moSpAvatar.observe(document.body, { childList: true, subtree: true });
-  }
 
-  // SP modal：開いた後に別JSで戻される可能性があるため、
-  // 「modalがshowになったタイミング」を拾って整形し、
-  // さらに短時間だけ監視して戻されたら再整形する
-  if (window.matchMedia('(max-width: 768px)').matches) {
+    const observeAvatarImg = (imgEl) => {
+      if (!imgEl) return false;
+
+      try {
+        moSpAvatar.observe(imgEl, {
+          attributes: true,
+          attributeFilter: ['src', 'class', 'style']
+        });
+      } catch (e) {
+        return false;
+      }
+
+      // 監視開始時点でも1回実行（初回遅延にも対応）
+      replaceSpAvatarIconToGear();
+      return true;
+    };
+
+    // まずは今ある右上アバターimgを監視
+    const avatarImg = document.querySelector('img.icon.mail:not(.btn-side-bar)');
+    const ok = observeAvatarImg(avatarImg);
+
+    // もし初回にまだ居ない場合だけ、出現検知（childListのみ）→ 見つかったら監視を切替
+    if (!ok) {
+      const moFindAvatar = new MutationObserver(() => {
+        const found = document.querySelector('img.icon.mail:not(.btn-side-bar)');
+        if (!found) return;
+
+        try { moFindAvatar.disconnect(); } catch (e) {}
+        observeAvatarImg(found);
+      });
+
+      moFindAvatar.observe(document.body, { childList: true, subtree: true });
+    }
+
+    /* =========================================================
+       SP modal：開いた後に別JSで戻される可能性があるため、
+       「modalがshowになったタイミング」を拾って整形し、
+       さらに短時間だけ監視して戻されたら再整形する
+       ========================================================= */
     const moModal = new MutationObserver(() => {
       const modal = document.querySelector('#profileModal.modal.show');
       if (!modal) return;
@@ -669,7 +819,14 @@ function init() {
       moBody.observe(body, { childList: true, subtree: true });
       setTimeout(() => moBody.disconnect(), 520);
     });
-    moModal.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+
+    moModal.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
   }
 
   // クリック起点：順序を修正（先に「右上アバターだったか」を判定してから歯車化する）
