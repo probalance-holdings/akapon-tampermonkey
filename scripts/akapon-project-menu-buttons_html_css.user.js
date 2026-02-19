@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜左上メニュー※akapon-project-menu-buttons_html_css.user.js
+// @name         11｜アカポン（プロジェクト｜左上メニュー※akapon-project-menu-buttons_html_css.user.js
 // @namespace    akapon
 // @version      1.0
 // @match        https://member.createcloud.jp/*
@@ -110,6 +110,20 @@ function injectCss() {
   color:#111;
   font-weight:600;
   font-size:13px;
+}
+
+/* ===== AKP Sidebar（#sidebar-recently）: modal shadow & corner ===== */
+#sidebar-recently{
+  /* 右上アバターと同じシャドー */
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.18),
+    0 2px 10px rgba(0,0,0,.10) !important;
+
+  /* 右上の角だけ丸くする */
+  border-top-right-radius: 14px !important;
+
+  /* 念のため：背景が透ける/角の見え方が変になるのを防ぐ */
+  background: #fff !important;
 }
 
 /* ===== AKP Sidebar: top button fix ===== */
@@ -376,12 +390,84 @@ function bindAccordion() {
 }
 
 /* =========================
-   初期化
+   外側クリックで閉じる
 ========================= */
+function bindCloseOnOutsideClick() {
+  // 多重バインド防止
+  if (window.__tmLeftMenuOutsideCloseBound) return;
+  window.__tmLeftMenuOutsideCloseBound = true;
+
+  document.addEventListener('click', function(e) {
+    const sidebar = document.querySelector('#sidebar-recently');
+    if (!sidebar) return;
+
+    // sidebarが非表示なら何もしない
+    const st = window.getComputedStyle(sidebar);
+    if (st.display === 'none' || st.visibility === 'hidden' || st.opacity === '0') return;
+
+    const t = e.target;
+    if (!t || typeof t.closest !== 'function') return;
+
+    // sidebar内クリックは対象外
+    if (t.closest('#sidebar-recently')) return;
+
+    // ★外側クリックで閉じる場合は、クリック連鎖を止める（下の要素のクリックを発火させない）
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    // ★closeBtn.click() は別のイベント連鎖を起こすことがあるので使わず、DOM操作だけで閉じる
+    sidebar.classList.add('d-none');
+
+    // “開状態” を示すクラスがある場合の保険（存在しても害が少ないものだけ）
+    sidebar.classList.remove('open');
+  }, true); // capture
+}
+
+/* =========================
+   「新しいプロジェクトを作成」クリックで閉じる
+   - 左メニュー（#sidebar-recently）が開いている時のみ
+   - onclick="Project.openCreateProjectModal(...)" の実行は止めない
+========================= */
+function bindCloseOnCreateProjectButton() {
+  // 多重バインド防止
+  if (window.__tmLeftMenuCreateProjectCloseBound) return;
+  window.__tmLeftMenuCreateProjectCloseBound = true;
+
+  document.addEventListener('click', function(e) {
+    const sidebar = document.querySelector('#sidebar-recently');
+    if (!sidebar) return;
+
+    // sidebarが非表示なら何もしない
+    const st = window.getComputedStyle(sidebar);
+    if (st.display === 'none' || st.visibility === 'hidden' || st.opacity === '0') return;
+
+    const t = e.target;
+    if (!t || typeof t.closest !== 'function') return;
+
+    // 対象：左メニュー内「新しいプロジェクトを作成」ボタン（hidePopupSideBar）
+      const btn = t.closest('#sidebar-recently a.hidePopupSideBar[onclick*="Project.openCreateProjectModal"]');
+      if (!btn) return;
+
+    // href="#" のデフォルト（ページ先頭へ）だけ抑止
+    e.preventDefault();
+
+    // クリック自体（onclick）は止めない：閉じるだけ先に実行
+    sidebar.classList.add('d-none');
+    sidebar.classList.remove('open');
+  }, true); // capture（onclickより先に閉じる）
+}
+
+// ★調査用：このスクリプトが動いているかを外から確認できるようにする
+window.__tm_left_menu_loaded = true;
+window.__tm_left_menu_bindCloseOnOutsideClick = bindCloseOnOutsideClick;
+
 function init(){
   injectCss();
   createMenu();
   bindAccordion();
+  bindCloseOnOutsideClick();
+  bindCloseOnCreateProjectButton(); // ✅ 追加
 }
 
 setTimeout(init, 500);
