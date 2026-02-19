@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜最初のプロジェクト作成※akapon-project-new-buttons-_html_css.user.js
+// @name         10｜アカポン（プロジェクト｜最初のプロジェクト作成※akapon-project-new-buttons-_html_css.user.js
 // @namespace    akapon
 // @version      1.0
 // @match        https://member.createcloud.jp/*
