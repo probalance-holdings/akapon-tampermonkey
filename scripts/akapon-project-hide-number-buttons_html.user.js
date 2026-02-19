@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜表示件数-HTML）※akapon-project-hide-number-buttons_html.user.js
+// @name         7｜アカポン（プロジェクト｜表示件数-HTML）※akapon-project-hide-number-buttons_html.user.js
 // @namespace    akapon
-// @version      1.1
+// @version      1.0
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-hide-filter-buttons_close.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-hide-number-buttons_html.user.js
 // @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-hide-number-buttons_html.user.js
 // ==/UserScript==
 
