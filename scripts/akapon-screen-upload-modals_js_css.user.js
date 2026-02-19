@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         アカポン（アップロード周りモーダル調整｜保存3秒｜YouTube広告｜バージョン更新）※akapon-screen-upload-modals_js_css.user.js
+// @name         9｜アカポン（アップロード周りモーダル調整｜保存3秒｜YouTube広告｜バージョン更新）※akapon-screen-upload-modals_js_css.user.js
 // @namespace    akapon
-// @version      1.1
+// @version      1.0
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
