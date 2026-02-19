@@ -290,7 +290,7 @@ const recentTasks = extractRecentTaskLinksFromSidebar(sidebar, 10);
 
 <!-- 外部メンバー -->
 <a class="tm-menu-link"
-   href="https://member.createcloud.jp/users/new">
+   href="https://member.createcloud.jp/collaborators/new">
    <img class="mr-3" src="/assets/nav/member-invitation-3c9b463db0515a4edb7d627bbf9643c924a4346444c93557fd764f2d97add378.png" width="24" height="14">
    外部メンバーを招待する
 </a>
