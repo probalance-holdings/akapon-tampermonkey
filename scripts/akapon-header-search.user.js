@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         19｜アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
+// @name         アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
 // @namespace    akapon
 // @version      1.0
 // @match        https://member.createcloud.jp/*
@@ -11,11 +11,36 @@
 (() => {
   'use strict';
 
+/* =========================================================
+   【エンジニア向けコメント｜ヘッダー文字の縦位置ズレ（全ページ統一の注意）】
+
+   現状、ページによってヘッダー内ナビ文字（例：CRM／オプション／現在のプラン 等）の
+   縦位置（高さ位置）が微妙にズレることがある。
+
+   原因の候補（混在しやすい）：
+   - ページ固有CSSで margin-top / padding / line-height が上書きされている
+   - transform: translateY(...) の個別適用が混ざっている
+   - .navbar-nav / .custom-nav-link / .btn-plan 等の display/align-items の差
+   - スクリプト側のページ別CSS注入（/projects や /akaire_file だけ等）による差
+
+   ■ 対応ルール（必須）
+   1) ヘッダー文字の縦位置は「共通CSS」で一元管理し、全ページで同一に統一すること。
+   2) ページごとの場当たり調整（top / margin-top / translateY の個別追加）は禁止。
+      ※例外が必要な場合も、最終的に共通CSSへ統合して差異を解消すること。
+   3) 基本は「display:flex + align-items:center」で揃え、line-height を含めて設計すること。
+   4) !important の乱用で局所修正しない（後で別ページだけズレが再発しやすい）。
+
+   ■ ゴール
+   どのURLでも、ヘッダー内の文字・アイコンの縦位置が完全に同一の見た目になること。
+   ========================================================= */
+
   // =========================================================
   // 設定（ヘッダーCSSのみ）
   // =========================================================
   const MIN_PC_WIDTH = 1024;
   const STYLE_ID = 'akapon-header-style';
+  const PLAN_STYLE_ID = 'akapon-plan-button-style';
+  const PROJECTS_NOTIFY_STYLE_ID = 'akapon-projects-notify-style';
 
   // =========================================================
   // PC判定
@@ -114,14 +139,6 @@ html body #navbar-common ul.navbar-nav .custom-nav-link[aria-expanded="true"]{
   box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 12px 0px !important;
   padding: 6px 15px !important;
   margin: 0 4px !important;
-}
-
-/* =========================================================
-   追加：通知ベル（data-name="notificationDropbox"）だけ少し上へ
-   - HTMLは触れず、CSSだけで位置を微調整
-   ========================================================= */
-html body a.drop_btn[data-name="notificationDropbox"]{
-  transform: translateY(-2px) !important;
 }
 
 /* PC以外はこのスクリプト由来の効果を出さない（保険） */
@@ -229,6 +246,80 @@ html body #navbar-common .dropdown-menu.akapon .dropdown-item:hover{
     parent.appendChild(style);
   }
 
+  // =========================================================
+  // TM: 「現在のプラン」ボタンCSS（全ページ共通）
+  // - SP/PCどちらでも適用
+  // =========================================================
+  function buildPlanCss() {
+    return `
+#plan-header-toggle-btn.btn-plan {
+  border: 1px solid #000 !important;
+  background-color: #e67e22;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.btn:not(:disabled):not(.disabled) {
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+`;
+  }
+
+  function injectPlanStyleOnce() {
+    if (document.getElementById(PLAN_STYLE_ID)) return;
+
+    const parent = document.head || document.documentElement;
+    if (!parent) return;
+
+    const style = document.createElement('style');
+    style.id = PLAN_STYLE_ID;
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode(buildPlanCss()));
+    parent.appendChild(style);
+  }
+
+  // =========================================================
+  // TM: /projects の時だけ「通知ベル」を少し上へ
+  // =========================================================
+  function buildProjectsNotifyCss() {
+    return `
+html body a.drop_btn[data-name="notificationDropbox"]{
+  transform: translateY(-2px) !important;
+}
+`;
+  }
+
+  function isProjectsPage() {
+    const p = location.pathname || '';
+    // https://member.createcloud.jp/projects （/projects 配下も含む）
+    return /^\/projects(\/|$)/.test(p);
+  }
+
+  function syncProjectsNotifyStyle() {
+    // 既存スタイルがあっても /projects 以外では消す（ページ遷移対策）
+    const existing = document.getElementById(PROJECTS_NOTIFY_STYLE_ID);
+
+    // ※このスクリプトのヘッダーCSS方針に合わせ、PC時のみ対象にする
+    if (!isPc() || !isProjectsPage()) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    if (existing) return;
+
+    const parent = document.head || document.documentElement;
+    if (!parent) return;
+
+    const style = document.createElement('style');
+    style.id = PROJECTS_NOTIFY_STYLE_ID;
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode(buildProjectsNotifyCss()));
+    parent.appendChild(style);
+  }
+
 // =========================================================
 // TM: dropdown hover 安定化（全ページ共通）
 // - Bootstrapが .show を外しても hover中は維持
@@ -269,6 +360,8 @@ function setupGlobalDropdownHover() {
 // =========================================================
 function tickInit() {
   injectStyleOnce();
+  injectPlanStyleOnce();
+  syncProjectsNotifyStyle();
   setupGlobalDropdownHover();   // ←追加
 }
 
