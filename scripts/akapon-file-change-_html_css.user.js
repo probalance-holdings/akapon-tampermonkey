@@ -6,6 +6,8 @@
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-file-change-_html_css.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-file-change-_html_css.user.js
 // ==/UserScript==
 
 (() => {
