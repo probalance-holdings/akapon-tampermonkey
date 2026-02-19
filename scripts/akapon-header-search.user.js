@@ -1,10 +1,9 @@
 // ==UserScript==
-// @name         19｜アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
+// @name         アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
 // @namespace    akapon
 // @version      1.0
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
-// @grant        none
 // @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
 // @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
 // ==/UserScript==
@@ -57,7 +56,7 @@ html body nav.navbar .navbar-nav > li:last-child{
 }
 
 /* 実DOMで確認できた: a.custom-nav-link が対象（プロジェクトだけ nav-border-white 付きでも同時に当たる） */
-html body nav.navbar .navbar-nav a.custom-nav-link{
+html body nav.navbar .navbar-nav .custom-nav-link{
   border: 1px solid rgba(255,255,255,.80) !important;
   border-radius: 10px !important;
 
@@ -75,12 +74,12 @@ html body nav.navbar .navbar-nav a.custom-nav-link{
 }
 
 /* hover の見た目（薄くハイライト） */
-html body nav.navbar .navbar-nav a.custom-nav-link:hover{
+html body nav.navbar .navbar-nav .custom-nav-link:hover{
   background: rgba(255,255,255,.14) !important;
 }
 
 /* focus の見た目（キーボード操作用） */
-html body nav.navbar .navbar-nav a.custom-nav-link:focus{
+html body nav.navbar .navbar-nav .custom-nav-link:focus{
   box-shadow: 0 0 0 2px rgba(255,255,255,.25) !important;
 }
 
@@ -92,7 +91,7 @@ html body nav.navbar .navbar-nav a.custom-nav-link:focus{
    ========================================================= */
 
 /* hover */
-html body #navbar-common ul.navbar-nav a.custom-nav-link:hover{
+html body #navbar-common ul.navbar-nav .custom-nav-link:hover{
   border-radius: 8px !important;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 12px 0px !important;
   padding: 6px 15px !important;
@@ -100,7 +99,7 @@ html body #navbar-common ul.navbar-nav a.custom-nav-link:hover{
 }
 
 /* active（現在開いているページ側：プロジェクト等で nav-border-white が付く） */
-html body #navbar-common ul.navbar-nav a.custom-nav-link.nav-border-white{
+html body #navbar-common ul.navbar-nav .custom-nav-link.nav-border-white{
   border-radius: 8px !important;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 12px 0px !important;
   padding: 6px 15px !important;
@@ -108,8 +107,9 @@ html body #navbar-common ul.navbar-nav a.custom-nav-link.nav-border-white{
 }
 
 /* dropdown open（CRM / オプション：開いた時） */
-html body #navbar-common ul.navbar-nav li.show > a.custom-nav-link,
-html body #navbar-common ul.navbar-nav a.custom-nav-link[aria-expanded="true"]{
+html body #navbar-common ul.navbar-nav li.show > .custom-nav-link,
+html body #navbar-common ul.navbar-nav .custom-nav-link[aria-expanded="true"]{
+
   border-radius: 8px !important;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 12px 0px !important;
   padding: 6px 15px !important;
@@ -132,6 +132,86 @@ html body a.drop_btn[data-name="notificationDropbox"]{
   }
 }
 
+@media (min-width: 1367px) {
+  .show-change-name-akaire-file-header {
+    max-width: 340px;   /* 110pxは狭すぎるので拡張 */
+    width: 340px;       /* 確実に幅を確保 */
+    min-width: 240px;   /* 画面によって潰れない保険 */
+  }
+}
+
+.akaire_file_name {
+  /* 既存は維持しつつ上書き */
+  width: 100%;
+
+  /* 省略「…」 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* 見た目（かっこよく＋読みやすく） */
+  border-radius: 10px;
+  padding: 8px 12px;
+
+  color: #1f2937;                 /* 黒寄りで読みやすく */
+  background: rgba(255, 255, 255, 0.92);  /* 白系で上品に */
+  border: 1px solid rgba(0,0,0,0.10);
+
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+
+  font-weight: 600;
+  line-height: 1.2;
+
+  outline: none;
+}
+
+/* フォーカス時（編集してる感を出す） */
+.akaire_file_name:focus {
+  box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+  border-color: rgba(30, 60, 114, 0.45);
+}
+
+/* =========================================================
+   TM: CRM / オプション：hover で dropdown を表示（クリック動作は残す）
+   - 構造：<a#navbarDropdown> + <div.dropdown-menu akapon ...>
+   - id が重複していても「隣接要素」で拾うため両方効く
+   ========================================================= */
+
+/* hover で開く（Bootstrapの .show 付与がなくても表示） */
+/* =========================================================
+   TM: CRM / オプション：hover で dropdown を表示（消えにくい方式）
+   - a:hover ではなく「親li」をhover対象にする
+   - メニュー側に乗っている間も表示維持
+   - キーボード操作は :focus-within で維持
+   ========================================================= */
+html body #navbar-common ul.navbar-nav li.dropdown:hover > .dropdown-menu.akapon,
+html body #navbar-common ul.navbar-nav li.dropdown:focus-within > .dropdown-menu.akapon{
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* 念のため：メニュー自体に乗っている間も維持 */
+html body #navbar-common ul.navbar-nav .dropdown-menu.akapon:hover{
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* dropdown の共通：角丸＋シャドー（他と同系統） */
+html body #navbar-common .dropdown-menu.akapon{
+  border-radius: 8px !important;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 12px 0px !important;
+  overflow: hidden !important; /* 角丸をきれいに見せる */
+}
+
+/* dropdown内の項目：hover時の見た目（既存を壊さない範囲） */
+html body #navbar-common .dropdown-menu.akapon .dropdown-item:hover{
+  background: rgba(30, 60, 114, 0.08) !important;
+}
+
 `;
   }
 
@@ -149,12 +229,48 @@ html body a.drop_btn[data-name="notificationDropbox"]{
     parent.appendChild(style);
   }
 
-  // =========================================================
-  // 起動（ヘッダーCSSのみ）
-  // =========================================================
-  function tickInit() {
-    injectStyleOnce();
-  }
+// =========================================================
+// TM: dropdown hover 安定化（全ページ共通）
+// - Bootstrapが .show を外しても hover中は維持
+// =========================================================
+function setupGlobalDropdownHover() {
+
+  if (window.__tmDropdownHoverInit) return;
+  window.__tmDropdownHoverInit = true;
+
+  const nav = document.getElementById('navbar-common');
+  if (!nav) return;
+
+  nav.addEventListener('mouseenter', (e) => {
+    const li = e.target.closest('li.dropdown');
+    if (!li) return;
+
+    const menu = li.querySelector('.dropdown-menu.akapon');
+    if (!menu) return;
+
+    li.classList.add('show');
+    menu.classList.add('show');
+  }, true);
+
+  nav.addEventListener('mouseleave', (e) => {
+    const li = e.target.closest('li.dropdown');
+    if (!li) return;
+
+    const menu = li.querySelector('.dropdown-menu.akapon');
+    if (!menu) return;
+
+    li.classList.remove('show');
+    menu.classList.remove('show');
+  }, true);
+}
+
+// =========================================================
+// 起動
+// =========================================================
+function tickInit() {
+  injectStyleOnce();
+  setupGlobalDropdownHover();   // ←追加
+}
 
   const mo = new MutationObserver(() => {
     tickInit();
