@@ -12,6 +12,16 @@
 (() => {
 'use strict';
 
+/* =========================================================
+   【エンジニア向けコメント／未解決バグ：離脱時の Swal2（変更履歴）】
+
+下記のアイコンは、1名のアイコンに変更してください。（CRM＞チーム情報のアイコン）
+<a class="tm-menu-link" href="https://member.createcloud.jp/users/new">
+   <img class="mr-3" src="/assets/nav/member-invitation-3c9b463db0515a4edb7d627bbf9643c924a4346444c93557fd764f2d97add378.png" width="24" height="14">
+   チームメンバーを招待する
+</a>
+   ========================================================= */
+
 const STYLE_ID = 'left-menu-modal_css';
 const ROOT_ID  = 'tm_project_left_menu_root';
 
