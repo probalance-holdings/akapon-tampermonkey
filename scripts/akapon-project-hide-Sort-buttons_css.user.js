@@ -189,6 +189,20 @@ table.search-list *{
   content: none !important;
   display: none !important;
 }
+
+.search-pc .sort_box_text .sort_list .slted,
+.search-pc .sort_box_text .sort_list .pcs-slted,
+.search-pc .slted {
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-color: transparent !important;
+}
+
+.border-new span {
+    position: relative;
+    top: 0px !important;
+}
 `;
 
   function injectCssOnce() {
