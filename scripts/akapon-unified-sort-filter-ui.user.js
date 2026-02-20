@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（共通｜並び順＋検索・絞り込みUI統合）※akapon-unified-sort-filter-ui.user.js
+// @name         アカポン（共通部分のみ｜並び順＋検索・絞り込みUI統合）※akapon-unified-sort-filter-ui.user.js
 // @namespace    akapon
 // @version      2026.02.20.1200
 // @match        https://member.createcloud.jp/*
@@ -12,23 +12,30 @@
 (() => {
   'use strict';
 
-/* =========================================================
-   【エンジニア向けコメント置き場】
+  /* =========================================================
+     【エンジニア向けコメント置き場】
 
-   目的：
-   - 既存の「並び順」「検索・絞り込み」が存在するページだけ、ボタン＋モーダルの見た目を共通化
-   - HTML注入（innerHTML置換）は行わず、既存DOMを活かす
-   - 並び順モーダル：存在する項目だけ優先順で並べ替え（項目が無いページは触らない）
-   - 検索・絞り込み：必ず最後に「件数」（.select-filter-eachpage）が来るように移動（存在する場合のみ）
-   - qs-datepicker（カレンダー）の曜日/日付ズレは CSS で 7列grid固定して補正（見た目のみ）
-   - 更新日、作成日、期限日など、既存構築されていない「並び順」と「絞り込み」は対応する事
+     目的：
+     - 既存の「並び順」「検索・絞り込み」が存在するページだけ、ボタン＋モーダルの見た目を共通化
+     - HTML注入（innerHTML置換）は行わず、既存DOMを活かす
+     - 並び順モーダル：存在する項目だけ優先順で並べ替え（項目が無いページは触らない）
+     - 検索・絞り込み：必ず最後に「件数」（.select-filter-eachpage）が来るように移動（存在する場合のみ）
+     - qs-datepicker（カレンダー）の曜日/日付ズレは CSS で 7列grid固定して補正（見た目のみ）
 
-   注意：
-   - SearchForm.selectSortDisplay / selectFilterDisplay 等の既存onclick/機能は変更しない
-   - DOM構造が想定と違うページは、できる範囲だけ適用し、壊さない
-   ========================================================= */
+     注意：
+     - SearchForm.selectSortDisplay / selectFilterDisplay 等の既存onclick/機能は変更しない
+     - DOM構造が想定と違うページは、できる範囲だけ適用し、壊さない
+
+     追加（共通＋分岐の橋渡し）：
+     - window.AKAPON_UI を共通側で作成し、ページ別scriptが handler 登録できるようにする
+     - 共通側は applyBase()（共通適用）→ applyAll()（共通＋ページ別handler）で実行
+     ========================================================= */
+
   const STYLE_ID = 'tm-unified-sort-filter-style-v1';
   const APPLIED_ATTR = 'data-tm-unified-sort-filter-applied';
+
+  // ✅ 旧HTML方式：td.td-filter-box へ 1回だけ注入した印
+  const FILTER_HTML_FLAG_ATTR = 'data-tm-filter-html-applied';
 
   // SPA/遷移対策（軽量）：URL変化時 + 描画後に再適用
   const RECHECK_MS = 400;
@@ -97,7 +104,13 @@ td.td-filter-box [onclick*="SearchForm.selectFilterDisplay"] img{
    共通：ボタン見た目（検索・絞り込み）
    - ページによって .bg-gray or .filter-btn など差があるため、td直下のonclick持ちを狙う
 ========================= */
-
+td.td-filter-box [onclick*="SearchForm.selectFilterDisplay"]{
+  background: #1f1f1f !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,25) !important;
+  border: 1px solid #1f1f1f !important;
+}
 td.td-filter-box [onclick*="SearchForm.selectFilterDisplay"] *{
   color: #fff !important;
 }
@@ -229,6 +242,141 @@ td.td-filter-box .border-new.filter-btn:hover{
   overflow: auto !important;
 }
 
+/* ・消す */
+#sortBox.sort_box ul,
+#sortBox.sort_box li{
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#sortBox.sort_box li::marker,
+#sortBox.sort_box li::before{
+  content: none !important;
+}
+
+/* ✅ ❶：＋は .sort_item:before で出ているので個別に潰す */
+.search-pc .sort_box_text .sort_list .sort_item::before{
+  content: "" !important;
+  display: none !important;
+}
+
+/* ✅ ❶「＋」を消す：.sort_item:before で出しているケース（projects等） */
+.search-pc .sort_box_text .sort_list .sort_item::before{
+  content: "" !important;
+  display: none !important;
+}
+
+/* 行の区切り */
+#sortBox.sort_box .li-sort-item{
+  border-bottom: 1px solid #eee !important;
+  padding: 10px 14px !important;   /* ✅ 旧：左右余白広め */
+}
+#sortBox.sort_box .li-sort-item:last-child{
+  border-bottom: none !important;
+}
+
+/* ✅ 旧寄せ：左＝親ラベル、右＝オプション（レイアウトを安定させる） */
+#sortBox.sort_box .li-sort-item{
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+
+/* 親ラベル（ID等） */
+#sortBox.sort_box .sort_item{
+  font-weight: 800 !important;
+  color: #222 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+
+  /* ✅ ❻ 旧寄せ：変なインデントを廃止 */
+  text-indent: 0 !important;
+  padding-left: 0 !important;
+
+  font-size: 0.95em !important;
+}
+
+/* ✅ ❷ 親行に付く “グレー背景” を潰す（IDなどが灰色になる件） */
+#sortBox.sort_box .sort_item.slted,
+#sortBox.sort_box .sort_item.pcs-slted{
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* 子（昇順/降順） */
+#sortBox.sort_box .li-sort-item > ul{
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;            /* ✅ 右寄せなので余計なmargin不要 */
+  padding: 0 !important;
+}
+#sortBox.sort_box .li-sort-item > ul > li.sort-option{
+  display: inline-flex !important;
+  position: relative !important;   /* ✅ ✓ の基点 */
+}
+
+/* 子ボタン */
+#sortBox.sort_box .li-sort-item > ul > li.sort-option a{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 6px 12px !important;
+  line-height: 1.2 !important;
+  font-size: 14px !important;
+  border-radius: 10px !important;
+  border: 1px solid #ddd !important;
+  background: #f7f7f7 !important;
+  color: #222 !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease !important;
+}
+#sortBox.sort_box .li-sort-item > ul > li.sort-option a:hover{
+  background: #e9eefc !important;
+  border-color: #1e3c72 !important;
+  color: #1e3c72 !important;
+}
+
+/* ✅ 選択状態 */
+#sortBox.sort_box .li-sort-item > ul > li.sort-option.slted a,
+#sortBox.sort_box .li-sort-item > ul > li.sort-option.pcs-slted a{
+  background: #eef3ff !important;
+  border-color: #1e3c72 !important;
+  color: #1e3c72 !important;
+  box-shadow: 0 0 0 2px rgba(30, 60, 114, .15) !important;
+}
+
+/* ✅ ❶❸：選択時に ✓ を必ず表示（再オープン時も class が残れば出る） */
+#sortBox.sort_box .li-sort-item > ul > li.sort-option.slted::after,
+#sortBox.sort_box .li-sort-item > ul > li.sort-option.pcs-slted::after{
+  content: "✓" !important;
+  position: absolute !important;
+  right: -8px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 999px !important;
+
+  background: #1e3c72 !important;
+  color: #fff !important;
+
+  font-weight: 900 !important;
+  font-size: 12px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 /* --- SP版：#modalSort（追加） --- */
 /* modal枠・影・角丸を #sortBox 相当に寄せる */
 #modalSort .modal-dialog.modal-style{
@@ -236,6 +384,7 @@ td.td-filter-box .border-new.filter-btn:hover{
   max-width: 420px !important;
   margin: 0 auto !important;
 }
+
 #modalSort .modal-content{
   border-radius: 14px !important;
   overflow: hidden !important;
@@ -332,6 +481,14 @@ td.td-filter-box .border-new.filter-btn:hover{
 #modalSort .sort_list li::marker,
 #modalSort .sort_list li::before{
   content: none !important;
+}
+
+/* ✅ Vol.6互換：sort_list 自体の余白を潰す（ulのデフォpadding対策）
+   - modal（#modalSort）だけに限定 */
+#modalSort .sort_list{
+  padding-left: 0 !important;
+  margin: 4px 0 0 !important;
+  padding-inline-start: 0 !important;
 }
 
 /* ✅ 「＋」表示を消す（SPでも出るケースがあるため） */
@@ -633,11 +790,19 @@ td.td-sort-box [onclick*="selectSortDisplay"] .sort-text-display{
   top: -1px !important;   /* ←必要なら -2px まで */
 }
 
-/* 検索・絞り込みボタン：文字だけ少し上に／枠の横幅を少し狭く */
-.bg-gray.d-flex.cursor-pointer.mr-1.position-relative.border-new.filter-btn{
-  /* 横幅を少し狭く（左右paddingを減らす） */
+/* ✅ ❶：並び順 と 検索・絞り込み の間の空白を広げる（PC/SP共通） */
+td.td-sort-box{
+  padding-right: 0px !important;
+}
+td.td-filter-box{
   padding-left: 10px !important;
-  padding-right: 10px !important;
+}
+
+/* 検索・絞り込みボタン：文字だけ少し上に／枠の横幅を狭く */
+.bg-gray.d-flex.cursor-pointer.mr-1.position-relative.border-new.filter-btn{
+  /* ✅ ❷：枠の横幅を狭く（左右paddingをさらに減らす） */
+  padding-left: 6px !important;
+  padding-right: 6px !important;
 
   /* 余計に広がる場合の保険（必要なら） */
   min-width: unset !important;
@@ -651,15 +816,64 @@ td.td-sort-box [onclick*="selectSortDisplay"] .sort-text-display{
   display: inline-block !important;
 }
 
-/* =========================
-   ⛔ filterボタン黒化を無効化
-========================= */
-td.td-filter-box .tm-filter-black-style{
-  background: #1f1f1f !important;
-  color: #fff !important;
-  border-radius: 12px !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .25) !important;
-  border: 1px solid #1f1f1f !important;
+/* ✅ ❸：SP版の「並び順」文字を小さく＆枠（高さ/横幅）を少し狭く */
+@media (max-width: 991px){
+
+  /* SP：並び順ボタン本体（貼付HTMLの class に合わせる） */
+  .border-new.sort.icon-sort{
+    padding: 6px 8px !important;     /* 高さ/横幅を少し小さく */
+    border-radius: 10px !important;
+  }
+
+  /* SP：並び順テキスト（保険） */
+  .border-new.sort.icon-sort .sort-text-display{
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* 念のため：td配下で描画されるケースも残す（既存互換） */
+  td.td-sort-box .border-new.sort .sort-text-display{
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
+}
+
+/* ✅ ここから追記：SP(<=768px)で親の font-size を確実に上書きする */
+@media (max-width: 768px){
+
+  /*
+    既存の強CSS：
+    .font-size-temple .border-new { font-size: var(--sp-font-size-text); ... }
+    に勝つため、同じ前提（.font-size-temple）＋より具体的（.border-new.sort.icon-sort）＋ !important
+  */
+  .font-size-temple .border-new.sort.icon-sort{
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* ✅ 「並び順」テキスト：余計な右余白を消して中央寄せ */
+  .font-size-temple .border-new.sort.icon-sort .sort-text-display{
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+
+    /* mr-1 を無効化して左右の偏りを消す */
+    margin-right: 0 !important;
+
+    /* max-width/ellipsis が中央寄せを崩すケースがあるのでSPは解除 */
+    max-width: none !important;
+
+    /* span自体も中央に */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  /* ✅ ボタン内の配置を確実に中央に寄せる（既存CSSに勝つため重要） */
+  .font-size-temple .border-new.sort.icon-sort{
+    justify-content: center !important;
+  }
 }
 `.trim();
 
@@ -674,18 +888,34 @@ td.td-filter-box .tm-filter-black-style{
   }
 
   // ---------------------------------------------
+  // ✅ 旧方式：検索・絞り込みHTML（td.td-filter-box）を 1回だけ注入
+  // - ページ別scriptが template を登録した時だけ動く
+  // - 他ページを壊さない（templateが無いなら何もしない）
+  // ---------------------------------------------
+  function applyFilterHtmlOnce() {
+    const td = document.querySelector('td.td-filter-box');
+    if (!td) return;
+
+    if (td.getAttribute(FILTER_HTML_FLAG_ATTR) === '1') return;
+
+    const path = location.pathname || '';
+    const pageKey = (path === '/projects') ? 'projects' : '';
+
+    const html = (window.AKAPON_UI && window.AKAPON_UI.filterHtmlByPage)
+      ? window.AKAPON_UI.filterHtmlByPage[pageKey]
+      : null;
+
+    if (typeof html !== 'string' || !html.trim()) return;
+
+    td.innerHTML = html;
+    td.setAttribute(FILTER_HTML_FLAG_ATTR, '1');
+  }
+
+  // ---------------------------------------------
   // 並び順：項目並べ替え（存在するものだけ）
+  // ※ /projects 固有は分岐scriptへ移動（ここでは触らない）
   // ---------------------------------------------
   function reorderSortItems(sortBox) {
-    const path = location.pathname || '';
-
-    // ✅ /projects は固定仕様（あなたの指示 ❶〜❻）
-    if (path === '/projects') {
-      applyProjectsSortBoxRules(sortBox);
-      return;
-    }
-
-    // それ以外：現状ロジックを維持（壊さない）
     const ul = sortBox.querySelector('.sort_list');
     if (!ul) return;
 
@@ -732,173 +962,6 @@ td.td-filter-box .tm-filter-black-style{
     ul.appendChild(frag);
   }
 
-  /* =========================================================
-     /projects 固定仕様（指示 ❶〜❻）
-     1: ID
-     2: 作成日（ダミー）
-     3: 更新日（= 更新）
-     4: 期限日（ダミー）
-     5: 容量（ダミー）
-     6: ステータス（旧 Status）
-     - 削除：カスタマイズ（表記揺れ含む）/ プロジェクト名
-     - 表示だけ調整：古い→古い順、新しい→新しい順
-  ========================================================= */
-  function applyProjectsSortBoxRules(sortBox) {
-    const ul = sortBox.querySelector('.sort_list');
-    if (!ul) return;
-
-    let items = Array.from(ul.querySelectorAll(':scope > li.li-sort-item'));
-    if (items.length < 1) return;
-
-    // ✅ /projects：カスタマイズ＆プロジェクト名は「非表示」ではなく DOM から削除する
-    items.forEach(li => {
-      const labelEl = li.querySelector('.sort_item');
-      const label = labelEl ? labelEl.textContent.replace(/\s+/g, ' ').trim() : '';
-
-      const hasCustomizeUi = !!li.querySelector('.create-customize-sort, .customize-sort-name, [id^="customize-sort-"]');
-      const isCustomizeLabel = /カスタ/i.test(label) && /マイズ/.test(label);
-      const isProjectName = (label === 'プロジェクト名');
-
-      if (hasCustomizeUi || isCustomizeLabel || isProjectName) {
-        li.remove();              // ✅ ❻ DOMから削除
-        return;
-      }
-
-      // ✅ ❶：Status → ステータス（ラベルだけ変更）
-      if (label === 'Status' || /^status$/i.test(label)) {
-        labelEl.textContent = 'ステータス';
-        return;
-      }
-
-      // ✅ 追加：更新 → 更新日（ラベルだけ変更）
-      if (label === '更新') {
-        labelEl.textContent = '更新日';
-        return;
-      }
-    });
-
-    // 文言（見た目のみ）
-    normalizeSortModalTextsForProjects(sortBox);
-
-    // ダミーを確保（存在しない時だけ生成）
-    const createdDummy = ensureDummySortRow(sortBox, '作成日', ['古い順', '新しい順']);
-    const dueDummy = ensureDummySortRow(sortBox, '期限日', ['古い順', '新しい順']);
-    const sizeDummy = ensureDummySortRow(sortBox, '容量', ['多い順', '少ない順']);
-
-    // 既存行を拾う
-    const idLi = findSortLiByLabel(sortBox, 'ID');
-    const updatedLi = findSortLiByLabel(sortBox, '更新日');   // ✅ ❸ 参照先を更新日へ
-    const statusLi = findSortLiByLabel(sortBox, 'ステータス');
-
-    // ✅ 指定順で並べ直し（/projects）
-    const order = [
-      idLi,               // 1
-      createdDummy,       // 2（ダミー）
-      updatedLi,          // 3（更新日）
-      dueDummy,           // 4（ダミー）
-      sizeDummy,          // 5（ダミー）
-      statusLi            // 6
-    ].filter(Boolean);
-
-    if (order.length === 0) return;
-
-    const frag = document.createDocumentFragment();
-    order.forEach(li => frag.appendChild(li));
-    ul.appendChild(frag);
-  }
-  /* ✅ ❸：/projects の文言統一（見た目のみ） */
-  function normalizeSortModalTextsForProjects(sortBox) {
-    const items = Array.from(sortBox.querySelectorAll('.li-sort-item'));
-    items.forEach(li => {
-      if (li.style.display === 'none') return;
-
-      const labelEl = li.querySelector('.sort_item');
-      const label = labelEl ? labelEl.textContent.replace(/\s+/g, ' ').trim() : '';
-
-      const options = Array.from(li.querySelectorAll('li.sort-option a[href]'));
-      options.forEach(a => {
-        const href = a.getAttribute('href') || '';
-        const txt = (a.textContent || '').replace(/\s+/g, ' ').trim();
-
-        // 更新日：表示は必ず「古い順 / 新しい順」に統一
-        if (label === '更新日' || label === '更新') {
-          // 「古い」「新しい」どちら表記でも確実に変換する
-          if (txt === '古い' || txt === '古い順') a.textContent = '古い順';
-          if (txt === '新しい' || txt === '新しい順') a.textContent = '新しい順';
-          return;
-        }
-        // ID：hrefで判定して古い順/新しい順に統一
-        if (label === 'ID') {
-          if (/sort_by%5Bid%5D=asc/.test(href)) a.textContent = '古い順';
-          if (/sort_by%5Bid%5D=desc/.test(href)) a.textContent = '新しい順';
-
-          if (txt === '昇順' && /sort_by%5Bid%5D=asc/.test(href)) a.textContent = '古い順';
-          if (txt === '降順' && /sort_by%5Bid%5D=desc/.test(href)) a.textContent = '新しい順';
-          return;
-        }
-
-        // ステータス（旧Status）は表示だけ任意（今回は触らない）
-      });
-    });
-  }
-
-  function normalizeLabelText(raw) {
-    return (raw || '').replace(/\s+/g, ' ').trim().replace(/（ダミー）$/,'');
-  }
-
-  function findSortLiByLabel(sortBox, labelText) {
-    const ul = sortBox.querySelector('.sort_list');
-    if (!ul) return null;
-
-    const lis = Array.from(ul.querySelectorAll(':scope > li.li-sort-item'));
-    for (const li of lis) {
-      if (li.style.display === 'none') continue;
-      const labelEl = li.querySelector('.sort_item');
-      const label = normalizeLabelText(labelEl ? labelEl.textContent : '');
-      if (label === labelText) return li;
-    }
-    return null;
-  }
-
-  // ✅ ❷❹❺：ダミー行生成（存在しなければ作る）
-  function ensureDummySortRow(sortBox, label, buttonTexts) {
-    const existing = findSortLiByLabel(sortBox, label);
-    if (existing) return existing;
-
-    const ul = sortBox.querySelector('.sort_list');
-    if (!ul) return null;
-
-    const li = document.createElement('li');
-    li.className = 'li-sort-item tm-dummy-sort-item';
-    li.style.opacity = '0.6';
-    li.style.pointerEvents = 'none';
-
-    const left = document.createElement('div');
-    left.className = 'sort_item';
-    left.textContent = `${label}（ダミー）`;
-
-    const right = document.createElement('ul');
-
-    const mkBtn = (text) => {
-      const opt = document.createElement('li');
-      opt.className = 'sort-option';
-      const a = document.createElement('a');
-      a.className = 'customize-sort-name-default';
-      a.setAttribute('href', 'javascript:void(0)');
-      a.textContent = text;
-      opt.appendChild(a);
-      return opt;
-    };
-
-    (buttonTexts || []).forEach(t => right.appendChild(mkBtn(t)));
-
-    li.appendChild(left);
-    li.appendChild(right);
-
-    // 一旦追加（順番は applyProjectsSortBoxRules で固定配置）
-    ul.appendChild(li);
-    return li;
-  }
   // ---------------------------------------------
   // 検索・絞り込み：件数を末尾へ
   // ---------------------------------------------
@@ -953,18 +1016,15 @@ td.td-filter-box .tm-filter-black-style{
     // - ✅ ラベルが無いページは span を追加
     // - ✅ 0件は非表示（data-tm-zero でCSS連動）
     // --------------------------
-const filterBtn = document.querySelector('td.td-filter-box [onclick*="selectFilterDisplay"]');
-if (filterBtn) {
-  if (!filterBtn.dataset.tmOrigHtml) filterBtn.dataset.tmOrigHtml = filterBtn.innerHTML;
+    const filterBtn = document.querySelector('td.td-filter-box [onclick*="selectFilterDisplay"]');
+    if (filterBtn) {
+      if (!filterBtn.dataset.tmOrigHtml) filterBtn.dataset.tmOrigHtml = filterBtn.innerHTML;
 
-  // 旧CSS前提のclassを付与（既存classは消さない）
-  filterBtn.classList.add('border-new', 'filter-btn', 'mr-1');
+      // 旧CSS前提のclassを付与（既存classは消さない）
+      filterBtn.classList.add('border-new', 'filter-btn', 'mr-1');
 
-  // 🔥 黒スタイル専用classを付与
-  filterBtn.classList.add('tm-filter-black-style');
-
-  // number（既存）を取得
-  const numberEl = filterBtn.querySelector('.number');
+      // number（既存）を取得
+      const numberEl = filterBtn.querySelector('.number');
 
       // ラベル確保（無ければ追加）
       let labelEl = filterBtn.querySelector('.filter-btn-label');
@@ -1012,8 +1072,14 @@ if (filterBtn) {
     }
   }
 
+  // ---------------------------------------------
+  // 共通適用（旧 applyOnce 相当）
+  // ---------------------------------------------
   function applyOnce() {
     injectCssOnce();
+
+    // ✅ 旧HTML方式：検索・絞り込みの骨組みを “1回だけ” 注入（template登録がある時のみ）
+    applyFilterHtmlOnce();
 
     // 二重適用の軽いガード（ただしURL変化時は再適用）
     const root = document.documentElement;
@@ -1050,35 +1116,76 @@ if (filterBtn) {
     if (filterModal) moveCountToLast(filterModal);
   }
 
-setTimeout(() => {
-  const s = document.createElement('style');
-  s.textContent = `
-html body td.td-filter-box [onclick*="SearchForm.selectFilterDisplay"]{
-  background: transparent !important;
-  color: inherit !important;
-  box-shadow: none !important;
-  border: none !important;
-}
-  `;
-  document.head.appendChild(s);
-}, 500);
+  // =========================================================
+  // ✅ AKAPON_UI：共通 + ページ別scriptの橋渡し
+  // =========================================================
+  (function initAkaponUIBridge(){
+    if (window.AKAPON_UI && window.AKAPON_UI.__inited) return;
 
-  // 初回
-  applyOnce();
+    const AKAPON_UI = window.AKAPON_UI = window.AKAPON_UI || {};
+    AKAPON_UI.__inited = true;
+
+    // ページ別handler格納
+    AKAPON_UI.pages = AKAPON_UI.pages || {};
+
+    // ページ別登録
+    AKAPON_UI.registerPage = function registerPage(pageKey, handler) {
+      AKAPON_UI.pages[pageKey] = handler;
+    };
+
+    // 共通：ベース適用（既存の normalize / inject css / observer 等を呼ぶ入り口）
+    AKAPON_UI.applyBase = function applyBase() {
+      applyOnce();
+    };
+
+    // 実行：共通 → ページ別
+    AKAPON_UI.applyAll = function applyAll() {
+      AKAPON_UI.applyBase();
+
+      const path = location.pathname || '';
+
+      // ✅ /projects は分岐scriptへ（登録があれば呼ぶ）
+      if (path === '/projects') {
+        const fn = AKAPON_UI.pages.projects;
+        if (typeof fn === 'function') fn();
+      }
+    };
+  })();
+
+  // 初回：共通 + ページ別
+  if (window.AKAPON_UI && typeof window.AKAPON_UI.applyAll === 'function') {
+    window.AKAPON_UI.applyAll();
+  } else {
+    applyOnce();
+  }
 
   // URL変化監視（軽量）
   let lastHref = location.href;
   setInterval(() => {
     if (location.href !== lastHref) {
       lastHref = location.href;
-      setTimeout(applyOnce, 50);
-} else {
-  // SPAでDOMが差し替わるケース用：最小の再適用
-  // ここでボタン整形も軽く回す（querySelector 2回程度なので重くならない）
-  normalizeButtonTexts();
 
-  const filterModal = document.querySelector('.filter-common-all');
-  if (filterModal) moveCountToLast(filterModal);
-}
+      const run = () => {
+        if (window.AKAPON_UI && typeof window.AKAPON_UI.applyAll === 'function') {
+          window.AKAPON_UI.applyAll();
+        } else {
+          applyOnce();
+        }
+      };
+
+      setTimeout(run, 50);
+    } else {
+      // SPAでDOMが差し替わるケース用：最小の再適用
+      // ここでボタン整形も軽く回す（querySelector 2回程度なので重くならない）
+      normalizeButtonTexts();
+
+      const filterModal = document.querySelector('.filter-common-all');
+      if (filterModal) moveCountToLast(filterModal);
+
+      // ✅ ページ別（/projects）も同周期で追随（登録がある場合のみ）
+      if (window.AKAPON_UI && typeof window.AKAPON_UI.applyAll === 'function') {
+        window.AKAPON_UI.applyAll();
+      }
+    }
   }, RECHECK_MS);
 })();
