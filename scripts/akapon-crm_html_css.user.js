@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         23｜アカポン（CRM｜チーム＆外部）※akapon-crm_html_css.user.js
+// @name         アカポン（CRM｜チーム＆外部）※akapon-crm_html_css.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      202602202300
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
@@ -330,7 +330,7 @@ if (container.parentNode) {
   container.parentNode.removeChild(container);
   return;
 }
-
+};
   // 初回も念のため実行（すでに出てる場合）
   document.addEventListener('DOMContentLoaded', () => {
     removeUnsavedSwalIfExists();
