@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         22｜アカポン（管理画面｜検索）※akapon-header-help-search.user.js
+// @name         アカポン（管理画面｜検索）※akapon-header-help-search.user.js
 // @namespace    akapon
-// @version      2.1
+// @version      20260221 1500
 // @match        https://member.createcloud.jp/*
 // @match        https://akapon.jp/*
 // @match        https://kanritools.com/*
@@ -520,39 +520,54 @@ body .column-wrapper,
   // =========================================================
   // ヘッダーへ「？」ボタン（右上アイコン群＝ベル周辺を最優先）
   // =========================================================
-  function findInsertPoint() {
-    // ヘッダー領域のみを探索（左グローバルメニュー側へ行かないように）
-    const headerRoot =
-      document.querySelector('#navbar-common') ||
-      document.querySelector('nav.navbar') ||
-      document.querySelector('.navbar_outer') ||
-      null;
+function findInsertPoint() {
 
-    if (!headerRoot) return null;
+  // akaire_feature 専用：右側ヘッダーに固定
+function findInsertPoint() {
 
-    // 1) ベル（通知）周辺が取れれば「その左」に挿入（最優先）
-    const bell = headerRoot.querySelector(
-      '.fa-bell, .feather-bell, [class*="bell"], a[href*="notification"], img[src*="bell"]'
-    );
-    if (bell) {
-      const wrap = bell.closest('a, li, div, span');
-      if (wrap && wrap.parentElement) return { parent: wrap.parentElement, before: wrap };
-    }
+  // akaire_feature：ユーザーアイコンの前に固定
+  const userInfo = document.querySelector(
+    '#navbarSupportedContentAkaire .dropdown.user_info'
+  );
 
-    // 2) 右寄せ nav グループ
-    const rightGroup =
-      headerRoot.querySelector('.navbar-nav.ml-auto') ||
-      headerRoot.querySelector('.navbar-nav.navbar-right') ||
-      null;
-
-    if (rightGroup) return { parent: rightGroup, before: null };
-
-    // 3) 最後の保険：ヘッダー内の navbar-nav
-    const anyNav = headerRoot.querySelector('.navbar-nav');
-    if (anyNav) return { parent: anyNav, before: null };
-
-    return null;
+  if (userInfo && userInfo.parentElement) {
+    return {
+      parent: userInfo.parentElement,
+      before: userInfo
+    };
   }
+
+  // 通常ページ：ベルの左
+  const bell = document.querySelector(
+    '#navbar-common svg.feather.feather-bell.icon'
+  );
+
+  if (!bell) return null;
+
+  const wrap = bell.closest('a, li, div, span');
+  if (!wrap || !wrap.parentElement) return null;
+
+  return {
+    parent: wrap.parentElement,
+    before: wrap
+  };
+}
+
+  // 通常ページ：通知ベルの左
+  const bell = document.querySelector(
+    '#navbar-common svg.feather.feather-bell.icon'
+  );
+
+  if (!bell) return null;
+
+  const wrap = bell.closest('a, li, div, span');
+  if (!wrap || !wrap.parentElement) return null;
+
+  return {
+    parent: wrap.parentElement,
+    before: wrap
+  };
+}
 
   function ensureHelpButton() {
     if (!isPc()) return;
