@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（swal2 modal 共通化ベース）※akapon-swal2-modal-common_base.user.js
 // @namespace    akapon
-// @version      20260220 2300
+// @version      20260221 1410
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
@@ -31,10 +31,6 @@
     document.head.appendChild(style);
 
     style.textContent = `
-body .swal2-popup.tm-swal-delete-project{
-  width: min(650px, calc(100vw - 40px)) !important;
-  max-width: min(650px, calc(100vw - 40px)) !important;
-}
 
 body .swal2-popup.tm-swal-delete-project .swal2-title{
   margin: 0 0 -18px 0 !important;
@@ -112,8 +108,19 @@ body .swal2-popup.tm-swal-delete-project .swal2-cancel:hover{
    - 既存完成形には一切影響しない
 ========================================================= */
 
-body .swal2-popup.tm-swal-setting-token{
-  width: min(650px, calc(100vw - 40px)) !important;
+/* ================================
+   PCのみ 700px 固定
+================================ */
+@media (min-width: 992px){
+
+  body .swal2-container.swal2-center
+  .swal2-popup.swal2-modal.new_alert_popup.tm-swal-delete-project,
+  body .swal2-container.swal2-center
+  .swal2-popup.swal2-modal.new_alert_popup.tm-swal-setting-token{
+    width: 700px !important;
+    max-width: 700px !important;
+  }
+
 }
 
 body .swal2-popup.tm-swal-setting-token .swal2-title{
@@ -176,6 +183,51 @@ body .swal2-container.swal2-center
 .swal2-confirm{
   font-size: 16px !important;
 }
+
+/* =====================================
+   SPのみ html-container padding 上書き（最強）
+===================================== */
+@media (max-width: 991px){
+
+  body .swal2-container.swal2-center
+  .swal2-popup.swal2-modal.new_alert_popup
+  .swal2-html-container{
+    padding: 7px 14px !important;
+  }
+
+  body .swal2-container.swal2-center
+  .swal2-popup.tm-swal-delete-project
+  .modal-body > p{
+    font-size: 0.8em !important;
+    font-weight: 400 !important; /* ノーマル */
+  }
+
+  body .swal2-container.swal2-center
+  .swal2-popup.swal2-modal.new_alert_popup.tm-swal-setting-token
+  .content{
+    font-size: 0.8em !important;
+  }
+
+  body .swal2-container.swal2-center
+  .swal2-popup.swal2-modal.new_alert_popup.tm-swal-setting-token
+  .swal2-confirm{
+    width: 37% !important;        /* 横幅いっぱい */
+    height: 44px !important;       /* 高さ */
+    font-size: 0.9em !important;   /* 文字サイズ */
+  }
+
+  body .swal2-container.swal2-center
+  .swal2-popup.swal2-modal.new_alert_popup.tm-swal-delete-project
+  .swal2-confirm,
+  body .swal2-container.swal2-center
+  .swal2-popup.swal2-modal.new_alert_popup.tm-swal-delete-project
+  .swal2-cancel{
+    height: 37px !important;      /* 枠高さ */
+    font-size: 0.8em !important; /* 文字サイズ */
+    min-width: unset !important;  /* 既存の140px解除 */
+  }
+}
+
 `;
   }
 
