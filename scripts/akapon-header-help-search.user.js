@@ -187,14 +187,57 @@ body .column-wrapper,
 
 `.trim();
 
-    const style = document.createElement('style');
-    style.id = 'akapon-web-embed-style';
-    style.type = 'text/css';
-    style.appendChild(document.createTextNode(css));
-    (document.head || document.documentElement).appendChild(style);
+const style = document.createElement('style');
+style.id = 'akapon-web-embed-style';
+style.type = 'text/css';
+style.appendChild(document.createTextNode(css));
+(document.head || document.documentElement).appendChild(style);
 
-    // WEB側はここで終了（管理画面側の処理は走らせない）
-    return;
+
+// =========================================================
+// embed=1 ページ内リンクを自動補正
+// =========================================================
+function patchEmbedLinks() {
+
+  const anchors = document.querySelectorAll('a[href]');
+
+  anchors.forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href) return;
+
+    if (
+      href.startsWith('#') ||
+      href.startsWith('javascript:') ||
+      href.startsWith('mailto:') ||
+      href.startsWith('tel:')
+    ) {
+      return;
+    }
+
+    try {
+      const url = new URL(href, location.href);
+
+      if (url.hostname !== location.hostname) return;
+
+      if (!url.searchParams.has('embed')) {
+        url.searchParams.set('embed', '1');
+        a.href = url.toString();
+      }
+
+    } catch(e){}
+  });
+}
+
+// 初回
+patchEmbedLinks();
+
+// 動的追加対応
+const mo = new MutationObserver(() => patchEmbedLinks());
+mo.observe(document.body, { childList: true, subtree: true });
+
+
+// WEB側はここで終了
+return;
   })();
 
   // =========================================================
