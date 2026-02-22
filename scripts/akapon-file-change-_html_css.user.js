@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         21｜アカポン（ファイルの保存先を変更modal）※akapon-file-change-_html_css.user.js
+// @name         アカポン（ファイルの保存先を変更modal）※akapon-file-change-_html_css.user.js
 // @namespace    akapon
-// @version      1.0.0
+// @version      20260222 1200
 // @description  Unified: file menu back links + project change modal (search/pager) + swal center + modal stack normalization
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
