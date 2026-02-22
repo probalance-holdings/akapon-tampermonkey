@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         12｜アカポン（右上アバター※akapon-avatar_html_css.user.js
+// @name         アカポン（右上アバター）※akapon-avatar_html_css.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      20260222 2100
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -36,7 +36,6 @@ ${MENU_SELECTOR}{
   padding: 10px 0 !important;
   border-radius: 14px !important;
   border: 1px solid rgba(0,0,0,.10) !important;
-
   /* ❷ かっこいいシャドー */
   box-shadow:
     0 18px 40px rgba(0,0,0,.18),
@@ -182,6 +181,18 @@ ${MENU_SELECTOR} .avatar-modal-icon{
     color:#111 !important;
   }
 
+  /* SP modal：タイトル行を追尾固定＋スクロール時に下部へシャドー */
+  #profileModal .tm-avatar-menu-title.tm-avatar-title-sticky{
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    background: #fff !important;
+  }
+
+  #profileModal .tm-avatar-menu-title.tm-avatar-title-sticky.tm-avatar-title-shadow{
+    box-shadow: 0 4px 10px rgba(0,0,0,.18) !important;
+  }
+
   /* ===== SP modal：項目を必ず「縦並び」に固定 ===== */
   #profileModal .modal-body{
     display: block !important;
@@ -282,15 +293,16 @@ ${MENU_SELECTOR} .avatar-modal-icon{
   }
 
   /* ===== ❶ SP切替直後の「旧アイコン一瞬表示」を防ぐ ===== */
-  img.icon.mail:not(.btn-side-bar)[src*="/assets/nav/avt_cc_2_new"]{
+  #navbar-common img.icon.mail:not(.btn-side-bar):not(.tm-gear-icon){
+    /* ヘッダー内の「まだ歯車化されていない」mailアイコンは非表示 */
     opacity: 0 !important;
   }
-  img.icon.mail.tm-gear-icon{
+  #navbar-common img.icon.mail.tm-gear-icon{
     opacity: 1 !important;
   }
 
   /* SPの歯車アイコン（mailアイコン差し替え先） */
-  img.icon.mail.tm-gear-icon{
+  #navbar-common img.icon.mail.tm-gear-icon{
     width: 24px !important;
     height: 24px !important;
 
@@ -474,6 +486,40 @@ function normalizeFocusForProfileModal(modalEl) {
 }
 
 /* =========================
+   SPプロフィールModal タイトルの追尾固定＋シャドー制御
+========================= */
+function setupProfileModalTitleSticky(modal) {
+  if (!modal) return;
+  const body = modal.querySelector('.modal-body');
+  if (!body) return;
+
+  const ensureBase = () => {
+    const title = modal.querySelector('.tm-avatar-menu-title');
+    if (!title) return;
+    title.classList.add('tm-avatar-title-sticky');
+  };
+
+  // スクロールイベントは1回だけbind
+  if (modal.dataset.tmAvatarTitleStickyBound !== '1') {
+    modal.dataset.tmAvatarTitleStickyBound = '1';
+
+    body.addEventListener('scroll', () => {
+      const title = modal.querySelector('.tm-avatar-menu-title');
+      if (!title) return;
+      ensureBase();
+      if (body.scrollTop > 0) {
+        title.classList.add('tm-avatar-title-shadow');
+      } else {
+        title.classList.remove('tm-avatar-title-shadow');
+      }
+    });
+  }
+
+  // 初期状態でも sticky 用クラスを付与
+  ensureBase();
+}
+
+/* =========================
    SPプロフィールModal（#profileModal）整形
    - PCと同じ情報に統一
    - SPは文字サイズ/余白をSP用に
@@ -559,6 +605,9 @@ function customizeProfileModalSP() {
 
   // 追加：DOM差し替え後もフォーカスを modal 側へ寄せる
   normalizeFocusForProfileModal(modal);
+
+  // 追加：タイトル行の追尾固定＋スクロール時シャドー制御
+  setupProfileModalTitleSticky(modal);
 }
 
   /* =========================
@@ -650,8 +699,10 @@ function customizeProfileModalSP() {
 function replaceSpAvatarIconToGear() {
   if (!window.matchMedia('(max-width: 768px)').matches) return;
 
-  // 対象：右上アバターの avt_cc_2_new のみ（btn-side-bar は絶対に触らない）
-  const img = document.querySelector('img.icon.mail:not(.btn-side-bar)[src*="/assets/nav/avt_cc_2_new"]');
+  // 対象：右上アバター（ヘッダー内の mail アイコン／btn-side-bar は絶対に触らない）
+  const img =
+    document.querySelector('#navbar-common img.icon.mail:not(.btn-side-bar)[data-tm-profile-avatar="1"]') ||
+    document.querySelector('#navbar-common img.icon.mail:not(.btn-side-bar)');
   if (!img) return;
 
   // 目印を残す（src を dataURI に変えた後も「この要素が右上アバター」だと判別できるように）
@@ -776,14 +827,14 @@ function init() {
       return true;
     };
 
-    // まずは今ある右上アバターimgを監視
-    const avatarImg = document.querySelector('img.icon.mail:not(.btn-side-bar)');
+    // まずは今ある右上アバターimgを監視（ヘッダー内のみ対象）
+    const avatarImg = document.querySelector('#navbar-common img.icon.mail:not(.btn-side-bar)');
     const ok = observeAvatarImg(avatarImg);
 
     // もし初回にまだ居ない場合だけ、出現検知（childListのみ）→ 見つかったら監視を切替
     if (!ok) {
       const moFindAvatar = new MutationObserver(() => {
-        const found = document.querySelector('img.icon.mail:not(.btn-side-bar)');
+        const found = document.querySelector('#navbar-common img.icon.mail:not(.btn-side-bar)');
         if (!found) return;
 
         try { moFindAvatar.disconnect(); } catch (e) {}
@@ -838,8 +889,8 @@ function init() {
 
     // 右上アバター判定（srcが変わっても判定できるように data も使う）
     const avatarClicked =
-      t.closest('img.icon.mail:not(.btn-side-bar)[data-tm-profile-avatar="1"]') ||
-      t.closest('img.icon.mail:not(.btn-side-bar)[src*="/assets/nav/avt_cc_2_new"]');
+      t.closest('#navbar-common img.icon.mail:not(.btn-side-bar)[data-tm-profile-avatar="1"]') ||
+      t.closest('#navbar-common img.icon.mail.tm-gear-icon:not(.btn-side-bar)');
 
     // クリック時も念のため歯車化（白枠化の再発防止）
     replaceSpAvatarIconToGear();
