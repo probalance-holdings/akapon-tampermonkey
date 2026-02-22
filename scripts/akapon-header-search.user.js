@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         19｜アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      20262021 1500
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
@@ -32,6 +32,41 @@
 
    ■ ゴール
    どのURLでも、ヘッダー内の文字・アイコンの縦位置が完全に同一の見た目になること。
+
+   ■ 基準ページ
+   - レイアウトの基準は必ず「プロジェクト一覧」
+     https://member.createcloud.jp/projects
+     の見た目を正とすること。
+   - 他ページでズレが発生した場合も、/projects 側の見た目は変更せず、
+     本 Userscript の共通CSS側で揃えること（ページ固有CSSにパッチを当てない）。
+
+   ■ 現時点でズレが出やすいページと対象要素（2026-02 時点の例）
+
+   1) https://member.createcloud.jp/company/contract
+      - 対象要素：
+        ・右上ヘッダーの「?」ボタン（#akapon-help-btn）
+        ・通知ベル（a.drop_btn[data-name="notificationDropbox"]）
+      - 要求仕様：
+        ・/projects と同じ 32px ラインに揃えること。
+        ・このページ専用の margin-top / padding-top / transform 等を
+          別CSSファイル側に追加しないこと。
+        ・ズレが出た場合は、本スクリプト内の共通CSSを更新して解消すること。
+
+   2) https://member.createcloud.jp/projects/:id/task
+      - 対象要素：
+        ・「現在のプラン」ボタン（#plan-header-toggle-btn.btn-plan）
+        ・通知ベル（a.drop_btn[data-name="notificationDropbox"]）
+      - 要求仕様：
+        ・/projects（一覧）の見た目を基準に、高さ・縦位置を合わせること。
+        ・task ページ専用の top / margin-top / translateY を追加して
+          見た目を合わせるのは禁止。
+        ・必要な場合は、本スクリプト内の共通CSS（ヘッダー共通ブロック）に寄せて修正すること。
+
+   ※ 上記以外のページでズレを発見した場合も、
+      1. /projects の computed style と比較して差分を特定し、
+      2. この Userscript の共通CSSに差分を取り込む
+      3. ページ固有CSSでの場当たり調整は行わない
+      というフローで対応すること。
    ========================================================= */
 
   // =========================================================
@@ -106,6 +141,88 @@ html body nav.navbar .navbar-nav .custom-nav-link:hover{
 /* focus の見た目（キーボード操作用） */
 html body nav.navbar .navbar-nav .custom-nav-link:focus{
   box-shadow: 0 0 0 2px rgba(255,255,255,.25) !important;
+}
+
+/* =========================================================
+   TM: ヘッダー共通の「縦位置」揃え
+   - /projects を基準とした高さ・上下位置を全ページで強制
+   - DOM が多少違っても #navbar-common 配下なら同じ見た目になるようにする
+   ========================================================= */
+
+/* 左側メニュー（CRM / プロジェクト / 書類管理 / オプションなど） */
+html body #navbar-common ul.navbar-nav > li > a.custom-nav-link{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  height: 32px !important;         /* ベースとなる高さ（必要に応じて調整） */
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+
+  line-height: 1.2 !important;
+}
+
+/* 右側アイコン類（?, 通知ベル, メガホン, ユーザーなど） */
+html body #navbar-common ul.navbar-nav a.drop_btn{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  height: 32px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* アイコンサイズを揃える（24px 前後に統一） */
+html body #navbar-common ul.navbar-nav a.drop_btn img,
+html body #navbar-common ul.navbar-nav a.drop_btn svg{
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* 「現在のプラン」ボタンも同じ高さに揃える */
+html body #navbar-common #plan-header-toggle-btn.btn-plan{
+  /* display はページ側の構造を優先するため、このスクリプトでは指定しない */
+  align-items: center !important;
+  justify-content: center !important;
+
+  height: 32px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ? ヘルプボタンを通知ベル・現在のプランと同じ32pxラインに揃える */
+html body #navbar-common #akapon-help-btn{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  height: 32px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ヘルプボタン（?）も同じ高さに揃える */
+html body #navbar-common #akapon-help-btn{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  height: 32px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  line-height: 1.2 !important;
+  transform: none !important;
 }
 
 /* =========================================================
@@ -298,13 +415,13 @@ html body a.custom-nav-link[href="/akaire_feature/akaires/list_temp_file"]{
   // =========================================================
   // TM: /projects の時だけ「通知ベル」を少し上へ
   // =========================================================
-  function buildProjectsNotifyCss() {
-    return `
+function buildProjectsNotifyCss() {
+  return `
 html body a.drop_btn[data-name="notificationDropbox"]{
-  transform: translateY(-2px) !important;
+  transform: none !important;
 }
 `;
-  }
+}
 
   function isProjectsPage() {
     const p = location.pathname || '';
