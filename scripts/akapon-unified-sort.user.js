@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（共通｜並び順）※akapon-unified-sort.user.js
 // @namespace    akapon
-// @version      2026.02.22.0001
+// @version      2026.02.22.2200
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -386,6 +386,39 @@ table.search-list *{
   justify-content: center !important;
 }
 
+/* =========================
+   ＋ボタンを並び順と同じホバー挙動に統一
+   ＋縦中央完全固定
+========================= */
+
+.search-pc .btn.btn-create.plus.plus-icon{
+  background: #1f1f1f !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  border: 1px solid #1f1f1f !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,.22) !important;
+
+  /* ★追加ここから */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  line-height: 1 !important;
+  padding: 0 !important;
+  height: 40px !important;
+  width: 40px !important;
+  /* ★追加ここまで */
+
+  font-weight: 900 !important;
+  font-size: 24px !important;  /* ← 33は大きすぎ */
+}
+
+.search-pc .btn.btn-create.plus.plus-icon:hover{
+  background: #3f3f3f !important;
+  border-color: #3f3f3f !important;
+  color: #fff !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.26) !important;
+}
 /* =========================
    SP：#modalSort を projects見た目に寄せつつ文字だけ小さく
 ========================= */
