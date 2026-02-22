@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         4｜アカポン（プロジェクト｜ID～件数ボタンを非表示)※akapon-project-hide-filter-buttons-close_html.user.js
+// @name         アカポン（プロジェクト｜ID～件数ボタンを非表示)※akapon-project-hide-filter-buttons-close_html.user.js
 // @namespace    akapon
-// @version      1.1
+// @version      2026.02.20.1200
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -14,7 +14,7 @@
 
   const css = `
 /* =========================================================
-   フィルターボタン非表示（メンバー / Status / 作成日 / ID / 表示件数 / File数）
+   フィルターボタン非表示（メンバー / Status / 作成日 / ID / 表示件数 / File数 / 自社数）
    ※「全てのフィルタ（.filter-btn）」は残す
    ========================================================= */
 
@@ -45,6 +45,11 @@ td.td-filter-box .border-new[onclick*=".filter-content-number-record"]{
 
 /* File数（例：File数：18） */
 td.td-filter-box .border-new.d-flex.justify-content-space-between.align-items-center.mr-1{
+  display: none !important;
+}
+
+/* 自社数 */
+td.td-filter-box .border-new[onclick*=".filter-by-role-company"]{
   display: none !important;
 }
 `;
