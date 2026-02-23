@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
 // @namespace    akapon
-// @version      20262021 1500
+// @version      20262023 1900
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
@@ -360,6 +360,20 @@ html body a.custom-nav-link[href="/akaire_feature/akaires/list_temp_file"]{
   padding-right: 30px !important;
 }
 
+/* =========================================================
+   TM: 右側ヘッダー縦基準を完全統一
+   - ml-auto / nav-notification 構造差を無効化
+   ========================================================= */
+
+html body #navbar-common .ml-auto,
+html body #navbar-common .nav-notification{
+  display: flex !important;
+  align-items: center !important;
+}
+
+html body #navbar-common .nav-notification{
+  height: 48px !important;
+}
 `;
   }
 
