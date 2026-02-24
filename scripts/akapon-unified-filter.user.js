@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（共通｜検索・絞り込み）※akapon-unified-filter.user.js
 // @namespace    akapon
-// @version      2026.02.22.0001
+// @version      2026.02.24　1800
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -31,6 +31,8 @@
      - 作成日（ダミー）
      - 期限日（ダミー）
      - 容量（ダミー）
+     - 登録日（チーム情報｜外部情報のみ）
+     - ID（ファイル｜会員一覧｜チーム情報｜外部情報のみ　動きません）
    → UI統一のため表示はするが、実機能はサーバー側実装が必要
 
    ■ ページ別：検索・絞り込み項目  ※ PAGE_CONFIG と揃える
@@ -42,6 +44,9 @@
        ID / アカウント名 / 件数
 
    ■ 注意
+   - users　collaborators　company_apply_campaigns　のID　/　登録日が動かない
+   - task_akaire_files　project_akaire_files　のIDが動かない
+   - SP版は動いていないので、PCと同じDOMを使用し、文字サイズのみCSSで調整してください。
    - SearchForm.selectFilterDisplay / resetDataSearch / quick-submit など既存 onclick は変更しない
    - HTML差し替えは禁止（name違いで壊れるため）
    - ここは「UI統一・項目表示制御・件数末尾移動・メンバー検索強化」のみ担当
@@ -62,7 +67,6 @@ const PAGE_CONFIG = {
       'id',
       'created_at',
       'updated_at',
-      'due_date_dummy',
       'member',
       'status',
       'per_page'
@@ -100,7 +104,8 @@ const PAGE_CONFIG = {
      ========================= */
   users: {
     filter: [
-      'id',
+      'id',           // ID
+      'role',         // 権限
       'registered_at',
       'member',
       'status',
@@ -125,8 +130,11 @@ const PAGE_CONFIG = {
      ========================= */
   company_apply_campaigns: {
     filter: [
-      'id',
-      'account_name',
+      'id',             // ID
+      'plan',           // プラン
+      'registered_at',  // 登録日
+      'payment_method', // 決済方法
+      'account_name',   // アカウント名
       'per_page'
     ]
   }
@@ -823,8 +831,14 @@ function detectFilterKeyFromRow(row) {
   if (label.includes('メンバー')) return 'member';
   if (label.includes('件数')) return 'per_page';
 
-  if (label.includes('登録日')) return 'created_at';
-  if (label.includes('アカウント名')) return 'member';
+  // 日付・名前系
+  if (label.includes('登録日')) return 'registered_at';
+  if (label.includes('アカウント名')) return 'account_name';
+
+  // 今回追加分
+  if (label.includes('権限')) return 'role';
+  if (label.includes('プラン')) return 'plan';
+  if (label.includes('決済方法')) return 'payment_method';
 
   return '';
 }
@@ -913,11 +927,10 @@ const rows = Array.from(body.querySelectorAll('.select-filter, .select-filter-ea
 
 rows.forEach(row => {
 
-  // 「優先度」「数量」「保管場所」は共通で非表示
+  // 「優先度」「数量」「保管場所」は共通で DOM ごと削除
   const labelText = normalizeText(row.textContent || '');
   if (labelText.includes('優先度') || labelText.includes('数量') || labelText.includes('保管場所')) {
-    row.style.display = 'none';
-    row.dataset.tmFilterKey = '';
+    row.remove();
     return;
   }
 
@@ -984,10 +997,15 @@ Array.from(body.querySelectorAll('.select-filter')).forEach(row => {
 // ===== 並び順を仕様通り固定 =====
 const ORDER = [
   'id',
+  'role',            // 権限
+  'plan',            // プラン
+  'registered_at',   // 登録日
+  'payment_method',  // 決済方法
   'created_at',
   'updated_at',
   'due_date_dummy',
   'due_date',
+  'account_name',
   'member',
   'status',
   'per_page'
@@ -1059,7 +1077,25 @@ ORDER.forEach(key => {
   }
 });
 
-    // 子モーダル（ID/作成日/更新日/メンバー/ステータス/件数など）も、不要なら隠す
+// users / collaborators： 「登録日」を「ID」の下に移動
+if (pageKey === 'users' || pageKey === 'collaborators') {
+  const idRow = currentRows.find(r => r.dataset.tmFilterKey === 'id');
+
+  let registeredRow = currentRows.find(r => r.dataset.tmFilterKey === 'registered_at');
+  if (!registeredRow) {
+    registeredRow = currentRows.find(r => {
+      const text = normalizeText(r.textContent || '');
+      return text.includes('登録日');
+    });
+  }
+
+  if (idRow && registeredRow && registeredRow !== idRow) {
+    const ref = idRow.nextElementSibling;
+    body.insertBefore(registeredRow, ref || null);
+  }
+}
+
+// 子モーダル（ID/作成日/更新日/メンバー/ステータス/件数など）も、不要なら隠す
     const childModals = Array.from(document.querySelectorAll('.filter-content.dropdown-new-stype'));
     childModals.forEach(m => {
       // 子モーダルはクラス名から推測（壊さない範囲で）
@@ -1071,6 +1107,13 @@ ORDER.forEach(key => {
       if (cls.includes('created-by-filter')) key = 'member';
       if (cls.includes('status-filter')) key = 'status';
       if (cls.includes('filter-content-number-record') || cls.includes('eachpage-filter')) key = 'per_page';
+
+      // 今回追加分
+      if (cls.includes('signup-date-filter')) key = 'registered_at';
+      if (cls.includes('role-filter')) key = 'role';
+      if (cls.includes('plan-filter')) key = 'plan';
+      if (cls.includes('payment-method-filter')) key = 'payment_method';
+
       if (!key) return;
 
       m.style.display = allowed.has(key) ? '' : 'none';
