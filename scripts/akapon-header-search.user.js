@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
 // @namespace    akapon
-// @version      20262024 1000
+// @version      20262024 2300
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
@@ -310,7 +310,11 @@ html body #navbar-common ul.navbar-nav .custom-nav-link[aria-expanded="true"]{
    - キーボード操作は :focus-within で維持
    ========================================================= */
 html body #navbar-common ul.navbar-nav li.dropdown:hover > .dropdown-menu.akapon,
-html body #navbar-common ul.navbar-nav li.dropdown:focus-within > .dropdown-menu.akapon{
+html body #navbar-common ul.navbar-nav li.dropdown:hover > .dropdown-menu.akaponunpublic,
+html body #navbar-common ul.navbar-nav li.dropdown:hover > .dropdown-menu.show-document-project,
+html body #navbar-common ul.navbar-nav li.dropdown:focus-within > .dropdown-menu.akapon,
+html body #navbar-common ul.navbar-nav li.dropdown:focus-within > .dropdown-menu.akaponunpublic,
+html body #navbar-common ul.navbar-nav li.dropdown:focus-within > .dropdown-menu.show-document-project{
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -318,7 +322,9 @@ html body #navbar-common ul.navbar-nav li.dropdown:focus-within > .dropdown-menu
 }
 
 /* 念のため：メニュー自体に乗っている間も維持 */
-html body #navbar-common ul.navbar-nav .dropdown-menu.akapon:hover{
+html body #navbar-common ul.navbar-nav .dropdown-menu.akapon:hover,
+html body #navbar-common ul.navbar-nav .dropdown-menu.akaponunpublic:hover,
+html body #navbar-common ul.navbar-nav .dropdown-menu.show-document-project:hover{
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -326,14 +332,18 @@ html body #navbar-common ul.navbar-nav .dropdown-menu.akapon:hover{
 }
 
 /* dropdown の共通：角丸＋シャドー（他と同系統） */
-html body #navbar-common .dropdown-menu.akapon{
+html body #navbar-common .dropdown-menu.akapon,
+html body #navbar-common .dropdown-menu.akaponunpublic,
+html body #navbar-common .dropdown-menu.show-document-project{
   border-radius: 8px !important;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 12px 0px !important;
   overflow: hidden !important; /* 角丸をきれいに見せる */
 }
 
 /* dropdown内の項目：hover時の見た目（既存を壊さない範囲） */
-html body #navbar-common .dropdown-menu.akapon .dropdown-item:hover{
+html body #navbar-common .dropdown-menu.akapon .dropdown-item:hover,
+html body #navbar-common .dropdown-menu.akaponunpublic .dropdown-item:hover,
+html body #navbar-common .dropdown-menu.show-document-project .dropdown-item:hover{
   background: rgba(30, 60, 114, 0.08) !important;
 }
 
@@ -474,40 +484,79 @@ html body a.drop_btn[data-name="notificationDropbox"]{
     parent.appendChild(style);
   }
 
-// =========================================================
-// TM: dropdown hover 安定化（全ページ共通）
-// - Bootstrapが .show を外しても hover中は維持
-// =========================================================
-function setupGlobalDropdownHover() {
+  // =========================================================
+  // TM: ヘッダードロップダウン hover 安定化
+  // - CRM / オプション など li.nav-item.dropdown を対象
+  // - ボタン or メニューの上にいる間は開いたまま維持
+  // - 外に出てから少し遅らせて閉じる（すぐ閉じてクリックできない対策）
+  // =========================================================
+  function setupHeaderDropdownHover() {
+    // PCのみ対象（SPは別DOMなので触らない）
+    if (!isPc()) return;
 
-  if (window.__tmDropdownHoverInit) return;
-  window.__tmDropdownHoverInit = true;
+    const nav = document.getElementById('navbar-common');
+    if (!nav) return;
 
-  const nav = document.getElementById('navbar-common');
-  if (!nav) return;
+    const lis = nav.querySelectorAll('li.nav-item.dropdown');
+    lis.forEach((li) => {
+      // 二重登録防止
+      if (li.dataset.tmHoverFixed === '1') return;
+      li.dataset.tmHoverFixed = '1';
 
-  nav.addEventListener('mouseenter', (e) => {
-    const li = e.target.closest('li.dropdown');
-    if (!li) return;
+      const trigger = li.querySelector('a.custom-nav-link[role="button"][data-toggle="dropdown"]');
 
-    const menu = li.querySelector('.dropdown-menu.akapon');
-    if (!menu) return;
+      // まず li 配下を優先
+      let menu = li.querySelector(
+        '.dropdown-menu.akapon, .dropdown-menu.akaponunpublic, .dropdown-menu.show-document-project'
+      );
 
-    li.classList.add('show');
-    menu.classList.add('show');
-  }, true);
+      // 念のため aria-labelledby 経由でも探索
+      if (!menu && trigger && trigger.id) {
+        menu = document.querySelector(`.dropdown-menu[aria-labelledby="${trigger.id}"]`);
+      }
+      if (!menu) return;
 
-  nav.addEventListener('mouseleave', (e) => {
-    const li = e.target.closest('li.dropdown');
-    if (!li) return;
+      let hideTimer = null;
 
-    const menu = li.querySelector('.dropdown-menu.akapon');
-    if (!menu) return;
+      const open = () => {
+        if (hideTimer) {
+          clearTimeout(hideTimer);
+          hideTimer = null;
+        }
+        li.classList.add('tm-hover-open');
+        menu.style.display = 'block';
+        menu.style.opacity = '1';
+        menu.style.visibility = 'visible';
+        menu.style.pointerEvents = 'auto';
+      };
 
-    li.classList.remove('show');
-    menu.classList.remove('show');
-  }, true);
-}
+      const scheduleClose = () => {
+        if (hideTimer) clearTimeout(hideTimer);
+        // ほんの少しだけ猶予を持たせることで「一瞬で閉じる」を防止
+        hideTimer = setTimeout(() => {
+          li.classList.remove('tm-hover-open');
+          menu.style.display = '';
+          menu.style.opacity = '';
+          menu.style.visibility = '';
+          menu.style.pointerEvents = '';
+        }, 180);
+      };
+
+      // li 全体
+      li.addEventListener('mouseenter', open);
+      li.addEventListener('mouseleave', scheduleClose);
+
+      // メニュー上
+      menu.addEventListener('mouseenter', open);
+      menu.addEventListener('mouseleave', scheduleClose);
+
+      // トリガー（CRM / オプション ボタン）上
+      if (trigger) {
+        trigger.addEventListener('mouseenter', open);
+        trigger.addEventListener('mouseleave', scheduleClose);
+      }
+    });
+  }
 
 // =========================================================
 // 起動
@@ -516,7 +565,7 @@ function tickInit() {
   injectStyleOnce();
   injectPlanStyleOnce();
   syncProjectsNotifyStyle();
-  setupGlobalDropdownHover();   // ←追加
+  setupHeaderDropdownHover();  // ← ここを追加
 }
 
   const mo = new MutationObserver(() => {
