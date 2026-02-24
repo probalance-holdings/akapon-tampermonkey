@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（右上アバター）※akapon-avatar_html_css.user.js
 // @namespace    akapon
-// @version      20260222 2100
+// @version      20260224 1400
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -11,6 +11,27 @@
 
 (() => {
   'use strict';
+
+/* =========================================================
+
+■ 基本方針
+・全ページで同じ情報にする
+
+■ アカポンアカウント
+　タスクをリリースするまでは、「作業一覧」➡「全ファイル」に差し替え、▼のアコーディオンは無し
+　ＣＣと統合後、「作業一覧」✚アコーディオンに戻す
+
+■ CCアカウント
+　タスクをリリースするまでは、「作業一覧」➡「全タスク」に差し替え、▼のアコーディオンは無し
+　ＣＣと統合後、「作業一覧」✚アコーディオンに戻す
+　完成済みファイル｜未納品作業一覧｜削除済み作業一覧は、統合後に削除する。
+
+■ 注意
+　・SPの時、下部modalですが、スクロールした時、menuタイトルが追尾固定になって、シャドーが入っているか確認
+　・SP版の時、歯車アイコンに変わっているか確認
+
+========================================================= */
+
 
   const STYLE_ID = 'tm_akapon_avatar_css';
   const MENU_SELECTOR = '.dropdown-menu.last-drop-down.dropdown-menu-right';
@@ -316,6 +337,8 @@ ${MENU_SELECTOR} .avatar-modal-icon{
     display: inline-block !important;
   }
 }
+
+
     `.trim();
 
 
@@ -325,7 +348,8 @@ ${MENU_SELECTOR} .avatar-modal-icon{
   /* =========================
      PC: dropdown を右上に寄せて固定
      - Popper の transform 位置決めを無効化し、
-       右上アバターボタン基準で top/right を再計算する
+       右上アバターボタン基準で right を再計算する
+       ※ top は 65px で固定
   ========================= */
   function positionAvatarDropdownPC(menuEl) {
     if (!menuEl) return;
@@ -341,7 +365,9 @@ ${MENU_SELECTOR} .avatar-modal-icon{
 
     // ボタン右端からの距離 = viewport右端 - ボタン右端
     const right = Math.max(margin, Math.round(window.innerWidth - rect.right));
-    const top = Math.round(rect.bottom + margin);
+
+    // モーダルの高さ（上端位置）を固定
+    const top = 65;
 
     // Popper/Bootstrap の inline transform を無効化して right/top で固定
     menuEl.style.position = 'fixed';
