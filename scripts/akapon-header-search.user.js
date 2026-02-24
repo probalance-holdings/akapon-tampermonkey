@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
 // @namespace    akapon
-// @version      20262023 1900
+// @version      20262024 1000
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-search.user.js
@@ -41,34 +41,25 @@
      本 Userscript の共通CSS側で揃えること（ページ固有CSSにパッチを当てない）。
 
    ■ 現時点でズレが出やすいページと対象要素（2026-02 時点の例）
+   もともとあったページ単位でのズレは直しました。
 
-   1) https://member.createcloud.jp/company/contract
-      - 対象要素：
-        ・右上ヘッダーの「?」ボタン（#akapon-help-btn）
-        ・通知ベル（a.drop_btn[data-name="notificationDropbox"]）
-      - 要求仕様：
-        ・/projects と同じ 32px ラインに揃えること。
-        ・このページ専用の margin-top / padding-top / transform 等を
-          別CSSファイル側に追加しないこと。
-        ・ズレが出た場合は、本スクリプト内の共通CSSを更新して解消すること。
+   ■ iPadのズレ
+　 ※　@media (min-width:1024px)の時、下記をアイコンに切り替える（サムネイル形式に切り替える場合はSPフッターにあるサムネイルアイコン、表形式に切り替える場合はSPフッターにある表形式アイコンにして、横幅をそろえる
+  <button type="button" class="btn bg-white font-weight-bold mr-4 switch-mode-file-button longer-display-btn" onclick="AkaireFile.updateSelectDisplayFile('6663', 'NewProject', 'display_file')">表形式に切替える</button>
 
-   2) https://member.createcloud.jp/projects/:id/task
-      - 対象要素：
-        ・「現在のプラン」ボタン（#plan-header-toggle-btn.btn-plan）
-        ・通知ベル（a.drop_btn[data-name="notificationDropbox"]）
-      - 要求仕様：
-        ・/projects（一覧）の見た目を基準に、高さ・縦位置を合わせること。
-        ・task ページ専用の top / margin-top / translateY を追加して
-          見た目を合わせるのは禁止。
-        ・必要な場合は、本スクリプト内の共通CSS（ヘッダー共通ブロック）に寄せて修正すること。
-
-   ※ 上記以外のページでズレを発見した場合も、
-      1. /projects の computed style と比較して差分を特定し、
-      2. この Userscript の共通CSSに差分を取り込む
-      3. ページ固有CSSでの場当たり調整は行わない
-      というフローで対応すること。
+　 ※　820*1180　の下記のずれを直してください。（文字サイズと高さ）
+.notice {
+    margin-top: -5px !important;
+}
+  <div class="notice-area d-flex align-items-center">
+                <div class="inner_1600">
+                    <div class="notice text-dark ml-0 ml-md-3">
+                        <span class="font-weight-bold notice-label">お知らせ：</span>
+                        <a class="text-notice" target="_blank" href="/news/93">アップデートについてのお知らせ※2026年02月08日</a>
+                    </div>
+                </div>
+            </div>
    ========================================================= */
-
   // =========================================================
   // 設定（ヘッダーCSSのみ）
   // =========================================================
@@ -373,6 +364,24 @@ html body #navbar-common .nav-notification{
 
 html body #navbar-common .nav-notification{
   height: 48px !important;
+}
+
+/* =========================================================
+   TM: notice / text-dark / text-notice 調整
+   ========================================================= */
+.text-dark a {
+  color: var(--primary-color);
+  font-size: 0.8em !important;
+}
+
+@media (max-width: 1023px) {
+  .text-notice {
+    font-size: 0.8em !important;
+  }
+}
+
+.notice {
+    margin-top: 5px !important;
 }
 `;
   }
