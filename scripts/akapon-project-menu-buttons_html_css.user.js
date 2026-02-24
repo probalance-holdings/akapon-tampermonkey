@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（プロジェクト｜左上メニュー）※akapon-project-menu-buttons_html_css.user.js
 // @namespace    akapon
-// @version      20260221 2000
+// @version      20260224 1300
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -17,19 +17,49 @@
 
 ■ 基本方針
 ・DOM依存しない（既存sidebarを毎回完全再構築）
-・URLでページタイプ判定
-・ベースメニューは1パターン
-・差分は「先頭ボタンのみ」
-・既存JSは一切変更しない
+・プロジェクトページをベースにし、URLでページタイプ判定
+
 ・将来他ドメインでも getPageType() 追加で拡張可能
 
 ■ ページ分類
-base        ：共通メニュー
-file-detail ：/akaire_feature/akaire_files/{id}
-file-root   ：/akaire_feature/akaire_files（※現状維持）
+
+●base        ：共通メニュー（タスク｜ファイルページ以外全て共通）
+　+新しいプロジェクトを作成
+　一時保管フォルダ
+　チームメンバーを招待する
+　外部メンバーを招待する
+
+　最近利用したタスク▼
+　最近利用したファイル▼
+－－－－－
+●タスクページ
+　一時保管フォルダ
+
+　このプロジェクト関連情報▼
+　　メンバー招待
+　　ステータス
+　　権限一括設定
+
+　最近利用したタスク▼
+　最近利用したファイル▼
+－－－－－
+●ファイルページ
+　一時保管フォルダ
+
+　このプロジェクト関連情報▼
+　　メンバー招待
+　　ステータス
+　　権限一括設定
+
+　最近利用した校正ページ▼
+
+■ アカポンアカウント
+　タスクをリリースするまでは、最近利用したタスク▼最近　は非表示にしてください。
+
+■ 注意事項
+　この左上メニューを開いている時、他のmodalを開いた時、並び順や絞り込みが閉じるか？またその逆も。
 
 ========================================================= */
-
 const STYLE_ID = 'left-menu-modal_css';
 const ROOT_ID  = 'tm_project_left_menu_root';
 
@@ -160,7 +190,15 @@ function injectCss() {
   text-decoration:none;
   color:#111;
   font-weight:600;
-  font-size:13px;
+}
+
+/* ------------------------------------
+   左上メニュー：PC時のフォントサイズ統一
+   （既存CSSより優先されるよう最強指定）
+------------------------------------ */
+#sidebar-recently,
+#sidebar-recently *{
+  font-size:1em !important;
 }
 
 #sidebar-recently{
@@ -177,7 +215,6 @@ function injectCss() {
   text-decoration:none;
   color:#111;
   font-weight:600;
-  font-size:13px;
 
   max-width:260px;          /* ★追加 */
   overflow:hidden;          /* ★追加 */
@@ -190,21 +227,82 @@ function injectCss() {
 ========================= */
 @media (max-width: 768px){
 
+  /* ------------------------------------
+     左上メニュー：SP時のフォントサイズ統一
+  ------------------------------------ */
+  #sidebar-recently,
+  #sidebar-recently *{
+    font-size:0.9em !important;
+  }
+
   body #sidebar-recently{
     width: 47vw !important;
     min-width: 0 !important;
     max-width: none !important;
   }
 
-/* =========================
-   SP専用フォント調整
-========================= */
+  /* =========================
+     SP：上部メニューの縦間隔調整
+     （一時保管フォルダ〜外部メンバーを招待する）
+  ========================= */
+  #sidebar-recently .tm-menu-link{
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+  /* SP：上部メニュー内のSVGアイコン（人アイコンなど）を少し小さくする */
+  #sidebar-recently .tm-menu-link svg{
+    width: 17px !important;
+    height: 17px !important;
+    margin-left: 3px;
+  }
+
+  /* SP：「チームメンバーを招待する」行だけ、上下の間隔をさらに少し詰める */
+  #sidebar-recently a.tm-menu-link[href*="/users/new"]{
+    padding-top: 0px !important;
+    padding-bottom: 5px !important;
+  }
+
+  /* SP：上部メニュー内のSVGアイコン（人アイコンなど）を少し小さくする */
+  #sidebar-recently .tm-menu-link svg{
+     width: 17px !important;
+     height: 17px !important;
+     margin-left: 3px;
+  }
+
+  /* =========================
+     SP：最近利用リストのタップ領域＋短い「――」区切り
+     （最近利用したタスク／ファイル／校正ページ など）
+  ========================= */
+  #sidebar-recently .tm-accordion-body a{
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    position: relative;
+  }
+
+  #sidebar-recently .tm-accordion-body a::after{
+    content: "――";
+    display: block;
+    margin-top: 2px;
+    font-size: 0.8em;
+    color: #ccc;
+    text-align: center;
+  }
+
+  /* 最後の1件だけは「――」を出さない */
+  #sidebar-recently .tm-accordion-body a:last-child::after{
+    content: "";
+  }
+
+  /* =========================
+     SP専用フォント調整
+  ========================= */
   .tm-accordion-header{
-    font-size:0.9em !important;
+    /* font-size は全体指定に任せる */
   }
 
   .tm-accordion-body a{
-    font-size:0.9em !important;
+    /* font-size は全体指定に任せる */
     line-height:1.4 !important;
   }
 
@@ -212,12 +310,10 @@ function injectCss() {
    アコーディオン文字統一
 ========================= */
 .tm-accordion-header{
-  font-size:0.9em !important;
   font-weight:700 !important;
 }
 
 .tm-accordion-body a{
-  font-size:0.9em !important;
   font-weight:700 !important;
 }
 
@@ -232,7 +328,7 @@ function injectCss() {
 
 #sidebar-recently .cursor-pointer,
 #sidebar-recently a{
-  font-size: 0.9em !important;
+  /* font-size は全体指定に任せる */
   font-weight: 700 !important;
 }
 
@@ -281,6 +377,8 @@ background:#E60C11;
   transform:scale(0.7) !important;
 }
 
+
+
 /* =========================
    校正画面 新規作成ボタン中央寄せ
 ========================= */
@@ -290,6 +388,35 @@ background:#E60C11;
   align-items:center !important;
   text-align:center !important;
 }
+}
+
+  #recently-projects,
+  #recently-tasks,
+  #sidebar-recently{
+    top: 68px !important;
+  }
+
+/* 左上メニュー内「権限一括設定」アイコンだけ少し小さくしつつ、文字の左位置を揃える（PC/SP共通） */
+#sidebar-recently img[src*="batch-pj-permission"]{
+    width: 16px !important;
+    height: 20px !important;
+    margin-right: 22px !important;
+    margin-top: -2px;
+    margin-left: 3px;
+}
+
+/* =========================
+   SP時の左上メニュー位置調整
+   - sp_navbar_header 配下だけ top を 31px に補正
+   - PC は既存CSS（top:62px）のまま
+========================= */
+@media (max-width: 1023px){
+  .sp_navbar_header #recently-projects,
+  .sp_navbar_header #recently-tasks,
+  .sp_navbar_header #sidebar-recently{
+    left: 0;
+    top: 31px !important;
+  }
 }
 `;
   document.head.appendChild(style);
@@ -549,7 +676,8 @@ ${ (type === 'akaire-file-page' || type === 'task') ? (() => {
      href="/projects/${projectId}/authority">
     <img class="mr-3"
          src="/assets/nav/batch-pj-permission-af7bbd5c047ad473c021a3d2db45e543cfac907c270f06f7646972f567437273.png"
-         width="22" height="27">
+         width="22"
+         height="27">
     権限一括設定
   </a>
 </div>
@@ -647,10 +775,10 @@ ${ type === 'base'
           `<a data-close-left target="_blank" href="${x.href}">・${x.text}</a>`
         ).join('')
       : `<div style="opacity:.6;">${
-  location.pathname.startsWith('/projects')
-    ? '最近利用したファイルがありません'
-    : '最近利用した校正ページがありません'
-}</div>`
+          type === 'base'
+            ? '最近利用したファイルがありません'
+            : '最近利用した校正ページがありません'
+        }</div>`
   }
 </div>
 `;
@@ -683,22 +811,113 @@ function bindAccordion() {
 }
 
 /* =========================
+   左上メニューを閉じる共通関数
+========================= */
+function closeLeftSidebar() {
+  const sidebar = document.querySelector('#sidebar-recently');
+  if (!sidebar) return;
+
+  // 左上メニューだけ閉じる（DOM直接制御）
+  sidebar.classList.add('d-none');
+}
+
+/* =========================
    左上モーダル自動クローズ
+   - 左メニュー内の data-close-left クリック時
+   - 他のモーダルが開いたタイミング
 ========================= */
 function bindAutoCloseLeftModal(){
 
+  // 左メニュー内のリンクなど（data-close-left）クリック時
   document.addEventListener('click', function(e){
 
     const el = e.target.closest('[data-close-left]');
     if(!el) return;
 
-    const sidebar = document.querySelector('#sidebar-recently');
-    if(!sidebar) return;
-
-    // 左上メニューだけ閉じる（DOM直接制御）
-    sidebar.classList.add('d-none');
+    closeLeftSidebar();
 
   });
+
+  // Bootstrap系モーダルを開くトリガーをクリックした時
+  document.addEventListener('click', function(e){
+
+    const trigger = e.target.closest('[data-toggle="modal"],[data-bs-toggle="modal"]');
+    if (!trigger) return;
+
+    closeLeftSidebar();
+
+  });
+
+  // SweetAlert2 / Bootstrap モーダルが DOM に追加された時も閉じる
+  const modalObserver = new MutationObserver(function(mutations){
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+
+        if (
+          node.classList.contains('modal-backdrop') ||
+          node.classList.contains('swal2-container') ||
+          (node.querySelector &&
+           (node.querySelector('.modal-backdrop') ||
+            node.querySelector('.swal2-container')))
+        ) {
+          closeLeftSidebar();
+          return;
+        }
+      }
+    }
+  });
+
+  modalObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
+
+/* =========================
+   SearchForm.selectFilterDisplay をフックして
+   「検索・絞り込み」(.filter-common-all) を開いたら
+   左メニューを自動で閉じる
+========================= */
+function patchSearchFormFilterAutoClose(){
+
+  function tryPatch(){
+
+    if (!window.SearchForm || typeof window.SearchForm.selectFilterDisplay !== 'function') {
+      return false;
+    }
+    if (window.SearchForm.__tmPatchedForLeftMenu) return true;
+
+    const original = window.SearchForm.selectFilterDisplay;
+
+    window.SearchForm.selectFilterDisplay = function() {
+      // 元の処理を先に実行
+      const result = original.apply(this, arguments);
+
+      try {
+        const selector = arguments[1];
+        if (selector === '.filter-common-all' ||
+            String(selector).indexOf('.filter-common-all') !== -1) {
+          closeLeftSidebar();
+        }
+      } catch (e) {
+        // 例外は握りつぶして UI を壊さない
+      }
+
+      return result;
+    };
+
+    window.SearchForm.__tmPatchedForLeftMenu = true;
+    return true;
+  }
+
+  // すでに SearchForm があれば即パッチ
+  if (tryPatch()) return;
+
+  // まだ定義されていない場合は、短時間だけポーリングして待つ
+  const timerId = setInterval(function(){
+    if (tryPatch()) clearInterval(timerId);
+  }, 300);
 }
 
 /* =========================
@@ -725,6 +944,7 @@ function init(){
   createMenu();
   bindAccordion();
   bindAutoCloseLeftModal();
+  patchSearchFormFilterAutoClose();   // ★ 検索・絞り込みフィルター用フック
 }
 
 /* =========================
