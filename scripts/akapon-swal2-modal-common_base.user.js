@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（swal2 modal 共通化ベース）※akapon-swal2-modal-common_base.user.js
 // @namespace    akapon
-// @version      20260221 1410
+// @version      2026022❹2000
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
@@ -11,6 +11,20 @@
 
 (() => {
   'use strict';
+
+/* =========================================================
+
+   ■ 未修正箇所
+   - タスクページの　「タスクを削除する」modalのみ下記CSSが　padding: 15 0 16px !important;　にならない。
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions {
+    margin: 0 !important;
+    padding: 0 0 16px !important;
+}
+
+   ■ 確認
+   プロジェクト削除、タスク削除、ファイル削除、二段認証以外に、同類のmodalは無いか？
+
+========================================================= */
 
   if (window.__tmSwalCommonV3Booted) return;
   window.__tmSwalCommonV3Booted = true;
@@ -32,6 +46,107 @@
 
     style.textContent = `
 
+/* =========================================================
+   TM: SweetAlert2（new_alert_popup）中央統一
+   - 通知（文字だけ）：中央で1秒表示（JSで閉じる）
+   - 確認（OKあり）：中央で固定（JSで閉じない）
+   ========================================================= */
+.swal2-container{
+  align-items: center !important;
+  justify-content: center !important;
+}
+.swal2-popup.new_alert_popup{
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+
+  margin: 0 !important;
+
+  border-radius: 14px !important;
+  overflow: hidden !important;
+
+  box-shadow: 0 10px 28px rgba(0,0,0,28) !important;
+}
+.swal2-popup.new_alert_popup .swal2-title{
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 14px !important;
+}
+.swal2-popup.new_alert_popup .swal2-html-container{
+  margin: 0 !important;
+  padding: 14px !important;
+}
+.swal2-popup.new_alert_popup .swal2-actions{
+  margin: 0 !important;
+  padding: 0 14px 14px 14px !important;
+}
+
+/* =========================================================
+   TM: new_alert_popup を “中央モーダル” に強制（最強）
+   - 既存の bottom固定（SP用）に勝つ
+   - まずはこれで「変わらない」を潰す
+   ========================================================= */
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup{
+  position: fixed !important;                 /* ← ここは fixed で確定 */
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+
+  width: min(560px, calc(100vw - 40px)) !important;
+  max-width: min(560px, calc(100vw - 40px)) !important;
+
+  height: auto !important;                    /* 12vh固定はやめる（文言で崩れる） */
+  min-height: 120px !important;               /* “それっぽい高さ”だけ担保 */
+  padding: 0 !important;
+
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: #fff !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,.28) !important;
+
+  z-index: 2147483647 !important;
+}
+
+/* ヘッダー風（titleが出ているタイプ用） */
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-title{
+  display: block !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
+}
+
+/* 本文（html-container が出るタイプ用） */
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-html-container{
+  display: block !important;
+  margin: 0 !important;
+  padding: 16px 14px !important;
+  color: #000 !important;
+  text-align: center !important;
+}
+
+/* OKボタン（出るタイプだけ） */
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions{
+  margin: 0 !important;
+  padding: 0 0 16px !important;
+}
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-confirm{
+  min-height: 36px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.28) !important;
+}
+
+/* ここから削除モーダル専用（tm-swal-delete-project） */
 body .swal2-popup.tm-swal-delete-project .swal2-title{
   margin: 0 0 -18px 0 !important;
 }
@@ -228,9 +343,23 @@ body .swal2-container.swal2-center
   }
 }
 
+/* 削除系モーダル（プロジェクト削除／ファイル削除）だけ 7px 14px にする */
+body .swal2-container.swal2-center
+  .swal2-popup.new_alert_popup.tm-swal-delete-project
+  .swal2-html-container {
+    padding: 7px 14px !important;
+}
+
+/* タスクページの削除モーダルだけ：ボタン上に 15px の余白を追加 */
+html.tm-akapon-page-tasks
+  body .swal2-container.swal2-center
+  .swal2-popup.new_alert_popup.tm-swal-delete-project[data-tm-html-delete-converted="1"]
+  .swal2-actions {
+    margin: 0 !important;
+    padding: 15px 0 16px !important;
+}
 `;
   }
-
   /* =========================================================
      ❷ ファイル削除 → プロジェクト削除DOMへ変換
   ========================================================= */
@@ -279,6 +408,119 @@ body .swal2-container.swal2-center
   }
 
   /* =========================================================
+     ❷-2 swal2-html-container 型（titleが空）削除モーダル → 同一構造へ変換
+     - 既存の完成形（delete-project-modal が元々ある）には触れない
+     - ファイル削除（title-confirm-delete-akaire-file）がある場合も触れない
+  ========================================================= */
+
+  function convertHtmlContainerDelete(popup) {
+    if (popup.dataset.tmHtmlDeleteConverted === '1') return;
+
+    const titleEl = popup.querySelector('.swal2-title');
+    const htmlEl  = popup.querySelector('.swal2-html-container');
+
+    if (!titleEl || !htmlEl) return;
+
+    // 既存の完成形 or ファイル削除は対象外（ここでは触らない）
+    if (popup.querySelector('.delete-project-modal')) return;
+    if (popup.querySelector('.title-confirm-delete-akaire-file')) return;
+
+    // html-container の内容を「行」に分解（<br> / 改行どちらでも）
+    const raw = (htmlEl.innerHTML || '').trim();
+    if (!raw) return;
+
+    const lines = raw
+      .split(/<br\s*\/?>|\n|\r\n|\r/i)
+      .map(s => s.replace(/<\/?[^>]+>/g, '').trim())
+      .filter(Boolean);
+
+    if (lines.length < 2) return;
+
+    // 削除確認っぽい文言がないものは対象外（誤爆防止）
+    const joined = lines.join(' ');
+    const looksLikeDelete =
+      joined.includes('を削除') ||
+      joined.includes('削除してよろしい') ||
+      joined.includes('復元') ||
+      joined.includes('削除すると');
+
+    if (!looksLikeDelete) return;
+
+    const titleText = lines[0];
+
+    // 本文候補（1行にまとめる部分）と「削除してよろしいですか？」を分離
+    let bodyLines = lines.slice(1);
+    let confirmLine = '';
+
+    const idxConfirm = bodyLines.findIndex(t => t.includes('削除してよろしいですか？'));
+    if (idxConfirm !== -1) {
+      confirmLine = bodyLines[idxConfirm];
+      bodyLines.splice(idxConfirm, 1);
+    }
+
+    // 本文は 1 行に結合（左寄せ）
+    const bodyText = bodyLines.join('');
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'delete-project-modal';
+
+    const modalTitle = document.createElement('div');
+    modalTitle.className = 'modal-title';
+    modalTitle.textContent = titleText;
+
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+
+    if (bodyText) {
+      const pBody = document.createElement('p');
+      pBody.textContent = bodyText;
+      modalBody.appendChild(pBody);
+    }
+
+    if (confirmLine) {
+      const pConfirm = document.createElement('p');
+      pConfirm.textContent = confirmLine;
+      pConfirm.style.textAlign = 'center';
+      modalBody.appendChild(pConfirm);
+    }
+
+    wrapper.appendChild(modalTitle);
+    wrapper.appendChild(modalBody);
+
+    // title に移し、表示する
+    titleEl.innerHTML = '';
+    titleEl.appendChild(wrapper);
+    titleEl.style.display = 'block';
+
+    // html-container は不要なので DOM から削除
+    if (htmlEl && htmlEl.parentNode) {
+      htmlEl.parentNode.removeChild(htmlEl);
+    }
+
+    // ボタン文言・表示をプロジェクト削除と同じ形にそろえる
+    const okBtn = popup.querySelector('.swal2-confirm');
+    const cancelBtn = popup.querySelector('.swal2-cancel');
+
+    if (okBtn) {
+      okBtn.textContent = '削除する';
+      okBtn.classList.remove('btn-primary');
+      if (!okBtn.classList.contains('btn-danger')) {
+        okBtn.classList.add('btn-danger');
+      }
+    }
+
+    if (cancelBtn) {
+      cancelBtn.textContent = 'キャンセル';
+      cancelBtn.style.display = 'inline-block';
+      if (!cancelBtn.classList.contains('btn-secondary')) {
+        cancelBtn.classList.add('btn-secondary');
+      }
+    }
+
+    popup.dataset.tmHtmlDeleteConverted = '1';
+  }
+
+  /* =========================================================
      ❸ popup 検知（1Observerのみ）
   ========================================================= */
 
@@ -287,25 +529,32 @@ body .swal2-container.swal2-center
 
     popup.dataset.tmSwalCommonApplied = '1';
 
-    // プロジェクト削除
+    // プロジェクト削除（既に完成形）
     if (popup.querySelector('.delete-project-modal')) {
       popup.classList.add('tm-swal-delete-project');
       return;
     }
 
-    // ファイル削除
+    // ファイル削除（title内に入っているタイプ）
     if (popup.querySelector('.title-confirm-delete-akaire-file')) {
       convertFileDelete(popup);
       popup.classList.add('tm-swal-delete-project');
+      return;
     }
 
-      // 二段階認証設定
-      if (popup.classList.contains('popup-seting-token')) {
-          popup.classList.add('tm-swal-setting-token');
-          return;
-      }
-  }
+    // swal2-html-container に本文が入っている削除（titleが空のタイプ）
+    convertHtmlContainerDelete(popup);
+    if (popup.dataset.tmHtmlDeleteConverted === '1') {
+      popup.classList.add('tm-swal-delete-project');
+      return;
+    }
 
+    // 二段階認証設定
+    if (popup.classList.contains('popup-seting-token')) {
+      popup.classList.add('tm-swal-setting-token');
+      return;
+    }
+  }
   function scan() {
     document.querySelectorAll('.swal2-popup').forEach(processPopup);
   }
