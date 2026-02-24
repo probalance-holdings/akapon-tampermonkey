@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（共通｜並び順）※akapon-unified-sort.user.js
 // @namespace    akapon
-// @version      2026.02.22.2200
+// @version      2026.02.24　1800
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -28,23 +28,26 @@
    ■ ダミー項目について
    ※ 以下は検索・絞り込みと同様 UI ダミー：
      - 作成日（ダミー）
-     - 期限日（ダミー）
      - 容量（ダミー）
-   並び順では「表示順だけ提供し、機能はサーバー側で実装する前提」
+   並び順では「表示順だけ提供し、機能はサーバー側で実装」
 
    ■ ページ別：並び順項目
    ● チーム情報 /users
-       ID / ステータス
+       ID / 権限　/　登録日　/　ステータス
    ● 外部情報 /collaborators
-       ID / ステータス
+       ID / 登録日　/　ステータス
    ● 会員一覧 /company_apply_campaigns
        ID / 登録日
-   ● タスク /projects/:id/task
-       タスク名（固定位置） / ステータス / 期限日（ダミー）
-   ● ファイル /akaire_file/.../project_akaire_files / task_akaire_files
-       ファイル名（固定位置） / ステータス / 期限日（ダミー）
+   ● プロジェクト　/　タスク /　ファイル
+   プロジェクト名　/　タスク名　/　ファイル名　/　カスタマイズ　は削除（bugがある為）
+
+   ■ bug
+   下記ページのステータスがbugってます。直してください。
+   https://member.createcloud.jp/collaborators
+   https://member.createcloud.jp/users
 
    ■ 注意
+   - SP版は動いていないので、PCと同じDOMを使用し、文字サイズのみCSSで調整してください。
    - onclick や URL 生成処理（/projects?sort_by[...]）は既存ロジックそのまま使用
    - DOM の移動は禁止（既存 SearchForm / Visiable.toggle の構造が壊れるため）
    - 並び順モーダル内のアイコン除去や「＋の右側縦線」統一はここで制御する
@@ -114,14 +117,14 @@ PC/SPで並び順UI・DOM・ロジックを完全共通化すること。
   // =========================================================
   // ページ別設定（sort項目だけ）
   // =========================================================
-  const PAGE_CONFIG = {
+const PAGE_CONFIG = {
     projects: { sort: ['id', 'created_at_dummy', 'updated_at_dummy', 'due_date_dummy', 'size_dummy', 'status'] },
-    users: { sort: ['id', 'status'] },
-    collaborators: { sort: ['id', 'status'] },
+    users: { sort: ['id', 'role', 'registered_at', 'status'] },
+    collaborators: { sort: ['id', 'registered_at', 'status'] },
     company_apply_campaigns: { sort: ['id', 'registered_at'] },
-    // task / file は projects と同じ
-    tasks: { sort: ['id', 'created_at_dummy', 'updated_at_dummy', 'due_date_dummy', 'size_dummy', 'status'] },
-    files: { sort: ['id', 'created_at_dummy', 'updated_at_dummy', 'due_date_dummy', 'size_dummy', 'status'] },
+    // task / file は projects と同じ（タスク/ファイルは期限を実項目 due_date で使用）
+    tasks: { sort: ['id', 'created_at_dummy', 'updated_at_dummy', 'due_date', 'size_dummy', 'status'] },
+    files: { sort: ['id', 'created_at_dummy', 'updated_at_dummy', 'due_date', 'size_dummy', 'status'] },
   };
 
   // =========================================================
@@ -497,6 +500,7 @@ table.search-list *{
     if (label.includes('期限') || label.includes('締切') || label.includes('予定')) return 'due_date';
     if (label.includes('容量') || label.includes('サイズ')) return 'size';
     if (label.includes('ステータス') || /^status$/i.test(label) || label === 'Status') return 'status';
+    if (label.includes('権限')) return 'role';
     if (label.includes('登録') || label.includes('登録日')) return 'registered_at';
     if (label.includes('アカウント') || label.includes('アカウント名')) return 'account_name';
 
@@ -582,83 +586,108 @@ function applySortByConfig(pageKey) {
   const ul = getSortList(root);
   if (!ul) return;
 
-  // ✅ ❷ 同じ構成を既に適用済みなら、並べ替えをやらない（チラつき/動き防止）
+  // ✅ 同じ構成を既に適用済みなら、並べ替えをやらない（チラつき/動き防止）
   const sig = `${pageKey}::${cfg.sort.join(',')}`;
   if (ul.dataset.tmSortAppliedSig === sig) {
     return;
   }
 
-  // 既存行をキー付け
+  // 既存行をキー付け＆ラベル補正
   const items = Array.from(ul.querySelectorAll(':scope > li.li-sort-item'));
   items.forEach(li => {
-      if (!li.dataset.tmSortKey) {
-        const key = detectSortKey(li);
-        if (key) li.dataset.tmSortKey = key;
-
-        // Status表記ゆれは見た目だけ統一
-        const labelEl = li.querySelector('.sort_item');
-        if (labelEl) {
-          const txt = normalizeText(labelEl.textContent);
-          if (txt === 'Status' || /^status$/i.test(txt)) labelEl.textContent = 'ステータス';
-        }
-      }
-    });
-
-    // ダミー（必要なページだけ）
-    if (cfg.sort.includes('created_at_dummy')) {
-      ensureDummyRow(ul, '作成日', 'created_at_dummy', ['新しい順', '古い順']);
+    if (!li.dataset.tmSortKey) {
+      const key = detectSortKey(li);
+      if (key) li.dataset.tmSortKey = key;
     }
-    if (cfg.sort.includes('due_date_dummy')) {
-      ensureDummyRow(ul, '期限日', 'due_date_dummy', ['新しい順', '古い順']);
+
+    const labelEl = li.querySelector('.sort_item');
+    if (!labelEl) return;
+
+    const txt = normalizeText(labelEl.textContent);
+
+    // Status 表記ゆれは見た目だけ統一
+    if (txt === 'Status' || /^status$/i.test(txt)) {
+      labelEl.textContent = 'ステータス';
     }
-    if (cfg.sort.includes('size_dummy')) {
-      ensureDummyRow(ul, '容量', 'size_dummy', ['多い順', '少ない順']);
+
+    // タスク/ファイルページ：期限 → 期限日（中身は due_date のまま）
+    if ((pageKey === 'tasks' || pageKey === 'files') &&
+        (li.dataset.tmSortKey === 'due_date' || txt === '期限')) {
+      labelEl.textContent = '期限日';
     }
-    if (cfg.sort.includes('updated_at_dummy')) {
-      ensureDummyRow(ul, '更新日', 'updated_at_dummy', ['新しい順', '古い順']);
-  // ✅ ❷ 適用済みマーク
-  ul.dataset.tmSortAppliedSig = sig;
-}
+  });
 
-// いったん全行を「許可されたキー以外は非表示」
-// ただし、プロジェクト名 / カスタイマイズ /（ダミー優先時の）更新 は DOM から削除
-const allowed = new Set(cfg.sort);
-Array.from(ul.querySelectorAll(':scope > li.li-sort-item')).forEach(li => {
-  const key = li.dataset.tmSortKey || detectSortKey(li);
-  if (key) li.dataset.tmSortKey = key;
-
-  // ✅ ❶ 削除（存在していたらDOMから削除）
-  // - プロジェクト名
-  // - カスタイマイズ（表記揺れ含む）
-  const labelEl = li.querySelector('.sort_item');
-  const label = normalizeText(labelEl ? labelEl.textContent : '');
-  const isProjectName = (label === 'プロジェクト名');
-  const isCustomize = /カスタ/i.test(label) && /マイズ/.test(label);
-
-  // customize UI がぶら下がってるケースも削除
-  const hasCustomizeUi = !!li.querySelector('.create-customize-sort, .customize-sort-name, [id^="customize-sort-"]');
-
-  if (isProjectName || isCustomize || hasCustomizeUi) {
-    li.remove();
-    return;
+  // ダミー（必要なページだけ）
+  if (cfg.sort.includes('created_at_dummy')) {
+    ensureDummyRow(ul, '作成日', 'created_at_dummy', ['新しい順', '古い順']);
+  }
+  if (cfg.sort.includes('due_date_dummy')) {
+    ensureDummyRow(ul, '期限日', 'due_date_dummy', ['新しい順', '古い順']);
+  }
+  if (cfg.sort.includes('size_dummy')) {
+    ensureDummyRow(ul, '容量', 'size_dummy', ['多い順', '少ない順']);
+  }
+  if (cfg.sort.includes('updated_at_dummy')) {
+    ensureDummyRow(ul, '更新日', 'updated_at_dummy', ['新しい順', '古い順']);
   }
 
-  // ✅ ❶ 削除：projects設定で updated_at_dummy を使う時は「実物 updated_at」をDOMから削除
-  if (allowed.has('updated_at_dummy') && key === 'updated_at') {
-    li.remove();
-    return;
-  }
+  // いったん全行を「許可されたキー以外は非表示」
+  // ただし、プロジェクト名 / タスク名 / ファイル名 /
+  // カスタマイズ /（ダミー優先時の）更新 / 期限日ダミー は DOM から削除
+  const allowed = new Set(cfg.sort);
+  Array.from(ul.querySelectorAll(':scope > li.li-sort-item')).forEach(li => {
+    const key = li.dataset.tmSortKey || detectSortKey(li);
+    if (key) li.dataset.tmSortKey = key;
 
-  li.style.display = (key && allowed.has(key)) ? '' : 'none';
-});
-  // ✅ ❹ ID の option を「新しい順 / 古い順」に統一＆順序も固定（desc→asc）
-  const idLi = Array.from(ul.querySelectorAll(':scope > li.li-sort-item'))
-    .find(li => (li.dataset.tmSortKey === 'id'));
+    const labelEl = li.querySelector('.sort_item');
+    const label = normalizeText(labelEl ? labelEl.textContent : '');
+
+    const isProjectName = (label === 'プロジェクト名');
+    const isTaskName = (pageKey === 'tasks' && label === 'タスク名');
+    const isFileName = (pageKey === 'files' && label === 'ファイル名');
+    const isCustomize = /カスタ/i.test(label) && /マイズ/.test(label);
+    const isDummyDueDate = ((pageKey === 'tasks' || pageKey === 'files') && li.dataset.tmSortKey === 'due_date_dummy');
+
+    // customize UI がぶら下がってるケースも削除
+    const hasCustomizeUi = !!li.querySelector('.create-customize-sort, .customize-sort-name, [id^="customize-sort-"]');
+
+    if (isProjectName || isTaskName || isFileName || isCustomize || hasCustomizeUi || isDummyDueDate) {
+      li.remove();
+      return;
+    }
+
+    // projects設定で updated_at_dummy を使う時は「実物 updated_at」をDOMから削除
+    if (allowed.has('updated_at_dummy') && key === 'updated_at') {
+      li.remove();
+      return;
+    }
+
+    li.style.display = (key && allowed.has(key)) ? '' : 'none';
+  });
+
+  // ID / 登録日 / 期限日 の option 文言を統一
+  const allLis = Array.from(ul.querySelectorAll(':scope > li.li-sort-item'));
+
+  const idLi = allLis.find(li => li.dataset.tmSortKey === 'id');
   if (idLi) normalizeIdOptions(idLi);
+
+  const regLi = allLis.find(li => li.dataset.tmSortKey === 'registered_at');
+  if (regLi) normalizeDateSortOptions(regLi, 'registered_at');
+
+  const dueLi = allLis.find(li => li.dataset.tmSortKey === 'due_date');
+  if (dueLi) normalizeDateSortOptions(dueLi, 'due_date');
+
+  // ★ 3ページ専用：ID / 登録日 を「新しい順 / 古い順」に揃える
+  //   - /company_apply_campaigns
+  //   - /users
+  //   - /collaborators
+  if (pageKey === 'users' || pageKey === 'collaborators' || pageKey === 'company_apply_campaigns') {
+    normalizeUserLikePageSortOptions(ul);
+  }
 
   // 指定順に並べ替え（存在するものだけ）
   const map = new Map();
-  Array.from(ul.querySelectorAll(':scope > li.li-sort-item')).forEach(li => {
+  allLis.forEach(li => {
     if (li.style.display === 'none') return;
     const key = li.dataset.tmSortKey;
     if (key) map.set(key, li);
@@ -669,13 +698,11 @@ Array.from(ul.querySelectorAll(':scope > li.li-sort-item')).forEach(li => {
     const li = map.get(k);
     if (li) frag.appendChild(li);
   });
-
   ul.appendChild(frag);
 
-    ul.dataset.tmSortAppliedSig = `${pageKey}::${cfg.sort.join(',')}`;
-
-    // ★表示テキスト補正
-    normalizeSortDisplayLabel();
+  // 適用済みマーク & ボタン文言補正
+  ul.dataset.tmSortAppliedSig = sig;
+  normalizeSortDisplayLabel();
 }
 
 // ✅ ❹ 追加：ID option の文言と順序を統一
@@ -707,6 +734,106 @@ function normalizeIdOptions(idLi) {
 }
 
 // =========================
+// 日付/ID系（登録日・期限日など）の option 文言を統一
+// =========================
+function normalizeDateSortOptions(li, key) {
+  const opts = Array.from(li.querySelectorAll('li.sort-option'));
+  if (opts.length < 2) return;
+
+  const getHref = (node) => {
+    const a = node.querySelector('a[href]');
+    return a ? a.getAttribute('href') || '' : '';
+  };
+
+  const asc = opts.find(o => new RegExp(`sort_by%5B${key}%5D=asc`).test(getHref(o)));
+  const desc = opts.find(o => new RegExp(`sort_by%5B${key}%5D=desc`).test(getHref(o)));
+
+  // 文言統一
+  if (asc) {
+    const a = asc.querySelector('a');
+    if (a) a.textContent = '古い順';
+  }
+  if (desc) {
+    const a = desc.querySelector('a');
+    if (a) a.textContent = '新しい順';
+  }
+
+  // 順序（新しい順→古い順）
+  const ul = li.querySelector(':scope > ul');
+  if (!ul) return;
+
+  const frag = document.createDocumentFragment();
+  if (desc) frag.appendChild(desc);
+  if (asc) frag.appendChild(asc);
+  ul.appendChild(frag);
+}
+
+// =========================
+// 3ページ専用（users / collaborators / company_apply_campaigns）
+// ID / 登録日の option を「新しい順 / 古い順」に統一
+// ※ 権限・ステータスは触らない（昇順 / 降順のまま）
+// =========================
+function normalizeUserLikePageSortOptions(ul) {
+  const rows = Array.from(ul.querySelectorAll(':scope > li.li-sort-item'));
+
+  rows.forEach(li => {
+    const key = li.dataset.tmSortKey || detectSortKey(li);
+    const labelEl = li.querySelector('.sort_item');
+    const label = normalizeText(labelEl ? labelEl.textContent : '');
+
+    const isId = (key === 'id' || label === 'ID');
+    const isRegistered = (key === 'registered_at' || label.includes('登録日'));
+    if (!isId && !isRegistered) return;
+
+    const opts = Array.from(li.querySelectorAll('li.sort-option'));
+    if (opts.length < 1) return;
+
+    let newerOpt = null; // 新しい順
+    let olderOpt = null; // 古い順
+
+    // テキストだけで「昇順 / 降順」を「新しい順 / 古い順」に寄せる
+    opts.forEach(opt => {
+      const a = opt.querySelector('a');
+      if (!a) return;
+      const txt = normalizeText(a.textContent);
+
+      if (txt.includes('降順') || txt.includes('新しい')) {
+        if (!newerOpt) newerOpt = opt;
+      } else if (txt.includes('昇順') || txt.includes('古い')) {
+        if (!olderOpt) olderOpt = opt;
+      }
+    });
+
+    // フォールバック：1番目＝新しい順、2番目＝古い順 とみなす
+    if (!newerOpt && opts[0]) newerOpt = opts[0];
+    if (!olderOpt && opts[1]) olderOpt = opts[1];
+
+    if (!newerOpt || !olderOpt || newerOpt === olderOpt) return;
+
+    // 文言を統一
+    const newerA = newerOpt.querySelector('a');
+    const olderA = olderOpt.querySelector('a');
+    if (newerA) newerA.textContent = '新しい順';
+    if (olderA) olderA.textContent = '古い順';
+
+    // 並び順：新しい順 → 古い順
+    const innerUl = li.querySelector(':scope > ul');
+    if (!innerUl) return;
+
+    const frag = document.createDocumentFragment();
+    frag.appendChild(newerOpt);
+    frag.appendChild(olderOpt);
+
+    // 3つ以上あっても残りは順番維持で後ろへ
+    opts.forEach(o => {
+      if (o !== newerOpt && o !== olderOpt) frag.appendChild(o);
+    });
+
+    innerUl.appendChild(frag);
+  });
+}
+
+// =========================
 // 並び順ボタンの表示文言を補正
 // =========================
 function normalizeSortDisplayLabel() {
@@ -718,15 +845,52 @@ function normalizeSortDisplayLabel() {
   // Status → ステータス
   txt = txt.replace(/^Status\b/i, 'ステータス');
 
-  // 昇順/降順 → 古い順/新しい順
-  txt = txt.replace('昇順', '古い順');
-  txt = txt.replace('降順', '新しい順');
+  // 対象ページ判定
+  //  - /company_apply_campaigns
+  //  - /users
+  //  - /collaborators
+  const path = location.pathname || '';
+  const isTargetPage = /^\/(company_apply_campaigns|users|collaborators)\b/.test(path);
+
+  if (isTargetPage) {
+    // ❶ 上記3ページだけ：
+    //    昇順＝「古い順」、降順＝「新しい順」に正しく対応させる
+    txt = txt
+      // ID
+      .replace(/ID[ 　]*[（(]昇順[)）]/, 'ID（古い順）')
+      .replace(/ID[ 　]*[（(]降順[)）]/, 'ID（新しい順）')
+      // 登録日
+      .replace(/登録日[ 　]*[（(]昇順[)）]/, '登録日（古い順）')
+      .replace(/登録日[ 　]*[（(]降順[)）]/, '登録日（新しい順）');
+    // 権限／ステータスはそのまま「昇順／降順」を維持
+  } else {
+    // ❷ その他のページは今まで通り
+    //    「昇順／降順 → 古い順／新しい順」に一括変換
+    txt = txt.replace('昇順', '古い順');
+    txt = txt.replace('降順', '新しい順');
+  }
 
   // 半角カッコ → 全角カッコへ統一
   txt = txt.replace(/\(/g, '（');
   txt = txt.replace(/\)/g, '）');
 
   display.textContent = txt;
+}
+
+// =========================
+// デフォルト並び順：ID 新しい順
+// （URL に sort_by[…] が無いときだけ実行）
+// =========================
+function ensureDefaultSort() {
+  // すでに並び順が指定されている場合は何もしない
+  if (/[?&]sort_by%5B/.test(location.search)) return;
+
+  // ID 新しい順のリンクを探す
+  const descLink = document.querySelector('a[href*="sort_by%5Bid%5D=desc"]');
+  if (!descLink) return;
+
+  // location.href で遷移（?sort_by[…] 付きURLになるので二重適用は発生しない）
+  location.href = descLink.href;
 }
 
 // =========================
@@ -812,15 +976,16 @@ function ensureHeaderBorderLine() {
   // =========================================================
   // メイン
   // =========================================================
-  const RECHECK_MS = 400;
-  let lastHref = location.href;
-
 function apply() {
   const pageKey = getPageKey();
   if (!pageKey) return;
 
   injectCssOnce();
   applySortByConfig(pageKey);
+
+  // デフォルト並び順：ID 新しい順
+  ensureDefaultSort();
+
   bindSpSortButtonToPcDom();
 
   // 一覧ヘッダーの縦線 <td> を projects と同じ構造に揃える
@@ -833,14 +998,14 @@ function apply() {
   // 初回
   apply();
 
-  // SPA/遷移対策（軽め）
+  // SPA/遷移対策：URL変更時だけ再適用
+  const RECHECK_MS = 400;
+  let lastHref = location.href;
+
   setInterval(() => {
     if (location.href !== lastHref) {
       lastHref = location.href;
       setTimeout(apply, 50);
-    } else {
-      // DOM差し替えに最低限追従
-      apply();
     }
   }, RECHECK_MS);
 
