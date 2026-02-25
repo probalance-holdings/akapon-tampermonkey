@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（共通｜並び順）※akapon-unified-sort.user.js
 // @namespace    akapon
-// @version      2026.02.24　1800
+// @version      20260225 1300
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -879,11 +879,29 @@ function normalizeSortDisplayLabel() {
 
 // =========================
 // デフォルト並び順：ID 新しい順
-// （URL に sort_by[…] が無いときだけ実行）
+// （URL に sort_by[…] が無く、かつ「ダイレクトアクセス」のときだけ実行）
 // =========================
 function ensureDefaultSort() {
+  const search = location.search || '';
+
   // すでに並び順が指定されている場合は何もしない
-  if (/[?&]sort_by%5B/.test(location.search)) return;
+  if (/[?&]sort_by%5B/.test(search)) return;
+
+  // --- ここから「ダイレクトアクセスかどうか」を判定 ---
+
+  // クエリ無し → /projects や /akaire_file/... をそのまま開いたケース
+  const isNoQuery = search === '';
+
+  // ?page=2 など「ページングだけ」のケース（これも一覧として扱う）
+  const isOnlyPage = /^\?page=\d+$/.test(search);
+
+  // 上記以外（= 絞り込みや、特定IDを開くためのクエリが付いているURL）は
+  // バックエンドの結果をそのまま使う（デフォルト並び順を強制しない）
+  if (!isNoQuery && !isOnlyPage) {
+    return;
+  }
+
+  // --- ここから従来どおり「ID 新しい順」をデフォルト適用 ---
 
   // ID 新しい順のリンクを探す
   const descLink = document.querySelector('a[href*="sort_by%5Bid%5D=desc"]');
@@ -894,6 +912,66 @@ function ensureDefaultSort() {
 }
 
 // =========================
+// 並び順リンククリック時に、現在の絞り込みクエリを保持する
+// =========================
+function bindSortOptionClickKeepFilters() {
+  const root = findSortRootPreferPc();
+  const ul = getSortList(root);
+  if (!ul) return;
+
+  const links = ul.querySelectorAll('li.sort-option a[href]');
+  links.forEach(function(a) {
+    // 二重バインド防止
+    if (a.dataset.tmKeepFilterBound === '1') return;
+
+    const href = a.getAttribute('href') || '';
+    if (!href) return;
+
+    // sort_by 系リンクのみ対象
+    if (!/sort_by%5B|sort_by\[/.test(href)) return;
+
+    a.dataset.tmKeepFilterBound = '1';
+
+    a.addEventListener('click', function(e) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 現在URLを基準にクエリを操作
+        const currentUrl = new URL(location.href);
+        const currentParams = currentUrl.searchParams;
+
+        // 既存の sort_by[...] を一旦全削除（絞り込み q[...] は残す）
+        const deleteKeys = [];
+        currentParams.forEach(function(value, key) {
+          if (key.indexOf('sort_by[') === 0) {
+            deleteKeys.push(key);
+          }
+        });
+        deleteKeys.forEach(function(key) {
+          currentParams.delete(key);
+        });
+
+        // クリックしたリンクの sort_by[...] だけを追加
+        const targetUrl = new URL(a.href, location.origin);
+        targetUrl.searchParams.forEach(function(value, key) {
+          if (key.indexOf('sort_by[') === 0) {
+            currentParams.set(key, value);
+          }
+        });
+
+        // 絞り込み q[...] などはそのまま、sort_by だけ差し替えたURLへ遷移
+        location.href = currentUrl.toString();
+      } catch (err) {
+        console.error('tm sort keep filters error', err);
+        // 何かあれば従来どおりにフォールバック
+        location.href = a.href;
+      }
+    });
+  });
+}
+
+// =========================
 // 並び順ボタン内の不要画像を削除
 // =========================
 function removeSortButtonIcon() {
@@ -901,12 +979,12 @@ function removeSortButtonIcon() {
   if (!btn) return;
 
   // ① sortアイコン削除
-  btn.querySelectorAll('img[src*="sort-"]').forEach(img => {
+  btn.querySelectorAll('img[src*="sort-"]').forEach(function(img) {
     img.remove();
   });
 
   // ② chevron削除（ラッパーdivごと）
-  btn.querySelectorAll('img[src*="chevron"]').forEach(img => {
+  btn.querySelectorAll('img[src*="chevron"]').forEach(function(img) {
     const wrapper = img.closest('div');
     if (wrapper && wrapper !== btn) {
       wrapper.remove();
@@ -985,6 +1063,9 @@ function apply() {
 
   // デフォルト並び順：ID 新しい順
   ensureDefaultSort();
+
+  // 並び順リンククリック時に、絞り込みクエリを維持
+  bindSortOptionClickKeepFilters();
 
   bindSpSortButtonToPcDom();
 
