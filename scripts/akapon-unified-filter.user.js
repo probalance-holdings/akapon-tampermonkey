@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         アカポン（共通｜検索・絞り込み）※akapon-unified-filter.user.js
 // @namespace    akapon
-// @version      2026.02.24　1800
+// @version      20260225 1300
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
@@ -44,6 +44,7 @@
        ID / アカウント名 / 件数
 
    ■ 注意
+   - プロジェクトレポートで、指定のタスク　/　ファイルのリンクからアクセスした時、絞り込みに❶が入っていない
    - users　collaborators　company_apply_campaigns　のID　/　登録日が動かない
    - task_akaire_files　project_akaire_files　のIDが動かない
    - SP版は動いていないので、PCと同じDOMを使用し、文字サイズのみCSSで調整してください。
@@ -629,6 +630,39 @@ html body .filter-content.dropdown-new-stype .qs-datepicker-container{
   justify-content: center !important;
 }
 
+/* ▼▼ 件数モーダル専用 UI 調整 ▼▼ */
+
+/* 右上の「完了」ボタンを非表示にする */
+.filter-content.dropdown-new-stype.filter-content-number-record .dropdown-header .quick-submit{
+  display: none !important;
+}
+
+/* 数字行に ✓ を出すための余白を確保 */
+.filter-content.dropdown-new-stype.filter-content-number-record .dropdown-body .option{
+  position: relative !important;
+  padding-right: 40px !important;
+}
+
+/* 選択中の行に ✓ を表示 */
+.filter-content.dropdown-new-stype.filter-content-number-record .dropdown-body .option.slted::after{
+  content: "✓" !important;
+  position: absolute !important;
+  right: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+  background: #1e3c72 !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 /* SP文字だけ小さく */
 @media (max-width: 991px){
   .filter-common-all.dropdown-new-stype .dropdown-header,
@@ -794,6 +828,33 @@ html body .filter-content.dropdown-new-stype .qs-datepicker-container{
   border-bottom: none !important;
 }
 
+/* 親モーダル：下角丸補完 */
+html body .filter-common-all.dropdown-new-stype{
+  border-radius: 14px !important;
+}
+html body .filter-common-all.dropdown-new-stype .dropdown-body{
+  border-bottom-left-radius: 14px !important;
+  border-bottom-right-radius: 14px !important;
+}
+
+/* 子モーダル（件数／作成日など）：下角丸補完 */
+html body .filter-content.dropdown-new-stype .dropdown-header{
+  border-top-left-radius: 14px !important;
+  border-top-right-radius: 14px !important;
+}
+html body .filter-content.dropdown-new-stype .dropdown-body{
+  border-bottom-left-radius: 14px !important;
+  border-bottom-right-radius: 14px !important;
+}
+
+/* 親・子とも、スクロール領域の白背景にも角丸を適用 */
+html body .filter-common-all.dropdown-new-stype .filter-content-scroll,
+html body .filter-content.dropdown-new-stype .filter-content-scroll{
+  border-bottom-left-radius: 14px !important;
+  border-bottom-right-radius: 14px !important;
+}
+
+
 /* =========================================================
    ▲▲ 旧プロジェクト版補強ここまで ▲▲
    ========================================================= */
@@ -894,6 +955,38 @@ function detectFilterKeyFromRow(row) {
       numberEl.setAttribute('data-tm-zero', isZero ? '1' : '0');
       if (!isZero) numberEl.textContent = String(n);
     }
+  }
+
+  // 親モーダル「クリア」クリック時に件数バッジを即時クリア
+  function bindResetAllClearCounts() {
+    // 二重バインド防止
+    if (document.body.dataset.tmResetAllBound === '1') return;
+    document.body.dataset.tmResetAllBound = '1';
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-common-all.dropdown-new-stype .reset-data-all');
+      if (!btn) return;
+
+      const root = btn.closest('.filter-common-all.dropdown-new-stype');
+      if (!root) return;
+
+      // 各行の件数バッジ（❶など）を即時クリア
+      root.querySelectorAll('.select-filter .number.count-filter').forEach((el) => {
+        el.textContent = '';
+        el.style.display = 'none';
+      });
+
+      // 一覧上部のフィルターボタンの件数もクリア
+      const mainBtn = document.querySelector('td.td-filter-box [onclick*="selectFilterDisplay"]');
+      if (mainBtn) {
+        const mainNum = mainBtn.querySelector('.number');
+        if (mainNum) {
+          mainNum.textContent = '';
+          mainNum.setAttribute('data-tm-ready', '1');
+          mainNum.setAttribute('data-tm-zero', '1');
+        }
+      }
+    }, false);
   }
 
 // 親モーダル行の表示制御
@@ -1324,6 +1417,26 @@ if (pageKey === 'users' || pageKey === 'collaborators') {
     }, true);
   }
 
+  // 件数モーダル：「＜ 表示件数」をクリックしたら親（.filter-common-all）に戻す
+  function bindPerPageModalBack() {
+    // 二重バインド防止
+    if (document.body.dataset.tmPerPageBackBound === '1') return;
+    document.body.dataset.tmPerPageBackBound = '1';
+
+    document.addEventListener('click', function (e) {
+      // 件数モーダル内ヘッダーの「＜ 表示件数」部分だけを対象
+      const header = e.target.closest(
+        '.filter-content.dropdown-new-stype.filter-content-number-record .dropdown-header .cursor-pointer'
+      );
+      if (!header) return;
+
+      if (!window.SearchForm || typeof window.SearchForm.selectFilterDisplay !== 'function') return;
+
+      // Status などと同じロジックで、親の filter-common-all を再表示
+      window.SearchForm.selectFilterDisplay('toggle', '.filter-common-all', e);
+    }, false);
+  }
+
   // =========================================================
   // メイン
   // =========================================================
@@ -1336,8 +1449,10 @@ if (pageKey === 'users' || pageKey === 'collaborators') {
 
     injectCssOnce();
     normalizeFilterButton();
+    bindResetAllClearCounts();
     applyFilterByConfig(pageKey);
     bindSpFilterButtonToPcDom();
+    bindPerPageModalBack(); // ★ 件数モーダルの「＜ 表示件数」で一覧に戻す
   }
 
   // 初回
