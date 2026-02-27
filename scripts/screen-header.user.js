@@ -181,6 +181,19 @@ html body #navbar-common .tm-proof-sep-right{
   margin-right: 7px !important;
 }
 
+/* =========================================================
+   バーガー
+   ========================================================= */
+  html body #navbar-common .btn-side-bar,
+  html body #navbar-common .btn-side-bar img{
+    margin-top: 8px !important;
+  }
+
+  html body #navbar-common .btn-side-bar{
+    width: 30px !important;
+    height: 30px !important;
+  }
+
 /* ❸ 1024幅：文字サイズ統一（総容量は非表示にしない方針へ変更） */
 @media (max-width: 1024px){
   html body #navbar-common,
@@ -512,41 +525,11 @@ function syncTempFolderText() {
   // DOMがまだ無いタイミングがあるので、短時間だけポーリングして当てる
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ① ヘッダー描画待ち（1回だけ）
-  const observer = new MutationObserver(() => {
-
+  // 0.2秒だけ待って1回実行
+  setTimeout(() => {
     if (!isProofreadingHeaderPage()) return;
-
-    const span = document.querySelector('#navbar-common .nav-bar-animation_size .animation_size');
-    if (!span) return;
-
-    // ✅ 既存どおり：全部の処理を走らせる
     tickInit();
-
-    // ✅ 念押しで総容量だけもう一度（描画直後に戻されることがある）
-    syncTotalSizeTwoLines();
-
-    // ② 「総容量」が後から元に戻されても、<br> を復元する（軽量）
-    if (!span.dataset.tmTwoLinesWatchBound) {
-      const spanObserver = new MutationObserver(() => {
-        // <br> が消えたら復活
-        if (!span.innerHTML.includes('<br')) {
-          syncTotalSizeTwoLines();
-        }
-      });
-
-      spanObserver.observe(span, { childList: true, characterData: true, subtree: true });
-      span.dataset.tmTwoLinesWatchBound = '1';
-    }
-
-    // 1回実行したら停止（ヘッダー待ちはここで終了）
-    observer.disconnect();
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+  }, 200);
 
 });
 })();
