@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         アカポン（swal2 modal 共通化ベース）※akapon-swal2-modal-common_base.user.js
+// @name         共通｜削除や確認系の画面中央modal※common-center-modal.user.js
 // @namespace    akapon
-// @version      2026022❹2000
+// @version      20260227 1500
 // @match        https://member.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
@@ -24,6 +24,10 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions {
    ■ 確認
    プロジェクト削除、タスク削除、ファイル削除、二段認証以外に、同類のmodalは無いか？
 
+　 ■　改善点
+　－　通知設定モーダル（*****の通知設定がOFFになりました。）は3秒で自動close
+　－　プロジェクト　/　タスク　/　ファイル削除後のモーダル　「削除されました。」のみとしOKボタンは削除。3秒で自動close
+　－　ステータス変更後のmodalボタンが「確認する」になっているので「変更する」に変更
 ========================================================= */
 
   if (window.__tmSwalCommonV3Booted) return;
@@ -48,7 +52,7 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions {
 
 /* =========================================================
    TM: SweetAlert2（new_alert_popup）中央統一
-   - 通知（文字だけ）：中央で1秒表示（JSで閉じる）
+   - 通知（文字だけ）：中央で3秒表示（JSで閉じる）
    - 確認（OKあり）：中央で固定（JSで閉じない）
    ========================================================= */
 .swal2-container{
@@ -103,9 +107,10 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup{
   max-width: min(560px, calc(100vw - 40px)) !important;
 
   height: auto !important;                    /* 12vh固定はやめる（文言で崩れる） */
-  min-height: 120px !important;               /* “それっぽい高さ”だけ担保 */
+  min-height: 69px !important;
   padding: 0 !important;
 
+  border: 1px solid #fff !important;
   border-radius: 12px !important;
   overflow: hidden !important;
   background: #fff !important;
@@ -138,12 +143,42 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-html-cont
 /* OKボタン（出るタイプだけ） */
 body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions{
   margin: 0 !important;
-  padding: 0 0 16px !important;
+  padding: 5px 0 16px !important;
 }
 body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-confirm{
+  display: inline-flex !important;
+  align-items: center !important;      /* 縦中央寄せ */
+  justify-content: center !important;  /* 横中央寄せ */
+  padding: 6px 24px !important;        /* 横幅を少し広く＆上下に余白 */
   min-height: 36px !important;
   border-radius: 10px !important;
   box-shadow: 0 8px 18px rgba(0,0,0,.28) !important;
+  padding-top: 9px !important;   /* 上に余白を増やして文字を少し下へ */
+  padding-bottom: 5px !important;/* 下の余白は少なめに */
+}
+
+/* =========================================================
+   TM: プラン制限モーダル（プランを変更する）専用
+   - delete系の完成形には影響しない
+   ========================================================= */
+body .swal2-popup.tm-swal-plan-restrict .swal2-actions{
+  gap: 10px !important;
+}
+
+body .swal2-popup.tm-swal-plan-restrict .swal2-confirm{
+  font-size: clamp(12px,1.8vw,14px) !important;
+  font-weight: 800 !important;
+  min-width: 180px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,.18) !important;
+}
+
+@media (max-width:480px){
+  body .swal2-popup.tm-swal-plan-restrict .swal2-confirm{
+    min-width: 160px !important;
+    height: 38px !important;
+  }
 }
 
 /* ここから削除モーダル専用（tm-swal-delete-project） */
@@ -358,6 +393,64 @@ html.tm-akapon-page-tasks
     margin: 0 !important;
     padding: 15px 0 16px !important;
 }
+
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-html-container {
+    padding: 7px 14px !important;
+}
+
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-title {
+    font-weight: 400 !important;
+}
+
+body .swal2-container.swal2-center .swal2-popup.new_alert_popup {
+    width: min(650px, calc(100vw - 40px)) !important;
+    max-width: min(650px, calc(100vw - 40px)) !important;
+}
+
+/* ==========================================
+   パスワードOFF確認モーダル専用調整
+   （new_alert_popup.tm-akapon-swal-confirm）
+   - 文字とボタンをPC/SPともに少し小さく
+========================================== */
+
+/* タイトル文字を少し小さく＆行間も調整（PCベース） */
+body .swal2-container.swal2-center
+.swal2-popup.new_alert_popup.tm-akapon-swal-confirm
+.swal2-title{
+    font-size: 0.95em !important;
+    line-height: 1.5 !important;
+}
+
+/* スマホ時はさらに小さく 0.8em に */
+@media (max-width: 1023px){
+  body .swal2-container.swal2-center
+  .swal2-popup.new_alert_popup.tm-akapon-swal-confirm
+  .swal2-title{
+      font-size: 0.8em !important;
+  }
+}
+
+/* OK/キャンセルボタンのサイズ・文字を一回り小さく */
+body .swal2-container.swal2-center
+.swal2-popup.new_alert_popup.tm-akapon-swal-confirm
+.swal2-actions{
+    padding: 6px 0 12px !important;
+    gap: 6px !important;
+}
+
+body .swal2-container.swal2-center
+.swal2-popup.new_alert_popup.tm-akapon-swal-confirm
+.swal2-confirm,
+body .swal2-container.swal2-center
+.swal2-popup.new_alert_popup.tm-akapon-swal-confirm
+.swal2-cancel{
+    padding: 4px 18px !important;
+    min-height: 30px !important;
+    font-size: 0.85em !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 14px rgba(0,0,0,.22) !important;
+}
+
 `;
   }
   /* =========================================================
@@ -520,14 +613,147 @@ html.tm-akapon-page-tasks
     popup.dataset.tmHtmlDeleteConverted = '1';
   }
 
+
   /* =========================================================
      ❸ popup 検知（1Observerのみ）
   ========================================================= */
+
+  // 通知専用（文字だけ new_alert_popup）かどうか判定
+  function isNotificationPopup(popup) {
+    if (!popup || !popup.classList.contains('new_alert_popup')) return false;
+
+    const actions = popup.querySelector('.swal2-actions');
+    if (!actions) return true;
+
+    // actions自体が非表示なら通知扱い
+    const actionsStyle = window.getComputedStyle(actions);
+    if (actionsStyle.display === 'none' || actionsStyle.visibility === 'hidden') {
+      return true;
+    }
+
+    // actions 内に「表示されているボタン」が一つでもあれば通知ではない
+    const hasVisibleButton = Array.from(actions.querySelectorAll('button')).some(btn => {
+      const s = window.getComputedStyle(btn);
+      return s.display !== 'none' && s.visibility !== 'hidden';
+    });
+
+    return !hasVisibleButton;
+  }
+
+// =========================================================
+// 通知OFFモーダル専用：最強CSS上書き
+// 他モーダルに影響しない
+// =========================================================
+(function(){
+
+  const STYLE_ID = 'tm-notify-off-modal-override';
+
+  if (document.getElementById(STYLE_ID)) return;
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  document.head.appendChild(style);
+
+  style.textContent = `
+
+/* =====================================================
+   ❶ OKボタン強制上書き（bg-primary完全撃破）
+===================================================== */
+body .modal-content.list-task-modal.tm-modal-theme-white
+.tm-diff-project-notify-header
+~ .modal-body .btn.bg-primary{
+
+  background: linear-gradient(90deg,#1e3c72,#2b2b2b) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 14px !important;
+  padding: 8px 30px !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,.28) !important;
+}
+
+
+/* =====================================================
+   ❷ 本文文字サイズを少し小さく
+   （var(--pc-font-size-title) を上書き）
+===================================================== */
+body .modal-content.list-task-modal.tm-modal-theme-white
+.warming-content{
+
+  font-size: 0.9em !important;
+  line-height: 1.3 !important;
+  margin-top: -15px;
+}
+
+
+/* =====================================================
+   ❸ 戻るボタン完全非表示（超最強）
+===================================================== */
+html body
+.modal-content.list-task-modal.tm-modal-theme-white
+.tm-file-modal-header.tm-diff-project-notify-header
+a.tm-file-header-back-btn{
+
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+
+/* =====================================================
+   ❹ modal枠シャドー強化
+===================================================== */
+body .modal-content.list-task-modal.tm-modal-theme-white{
+
+  border-radius: 16px !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,.45) !important;
+}
+
+  `;
+
+})();
 
   function processPopup(popup) {
     if (!popup || popup.dataset.tmSwalCommonApplied === '1') return;
 
     popup.dataset.tmSwalCommonApplied = '1';
+
+    // ▼ 通知だけの new_alert_popup は 3秒後に自動クローズ
+    if (isNotificationPopup(popup)) {
+      setTimeout(() => {
+        // まだDOM上にあり、かつ通知モーダルのままなら閉じる
+        if (!document.body.contains(popup)) return;
+        if (!isNotificationPopup(popup)) return;
+
+        try {
+          if (window.Swal && typeof window.Swal.close === 'function') {
+            window.Swal.close();
+          } else if (window.swal && typeof window.swal.close === 'function') {
+            window.swal.close();
+          } else {
+            const container = popup.closest('.swal2-container');
+            if (container && container.parentNode) {
+              container.parentNode.removeChild(container);
+            } else if (popup.parentNode) {
+              popup.parentNode.removeChild(popup);
+            }
+          }
+        } catch (e) {
+          // 失敗してもアプリ側には影響させない
+        }
+      }, 3000);
+    }
+
+    // ▼ プロジェクトStatus変更モーダル専用：「確認する」→「変更する」
+    const statusHtml = popup.querySelector('.swal2-html-container');
+    if (statusHtml) {
+      const text = (statusHtml.innerText || statusHtml.textContent || '').replace(/\s+/g, '');
+      if (text.includes('プロジェクトのStatusを変更します。よろしいですか？')) {
+        const confirmBtn = popup.querySelector('.swal2-confirm');
+        if (confirmBtn) {
+          confirmBtn.textContent = '変更する';
+        }
+      }
+    }
 
     // プロジェクト削除（既に完成形）
     if (popup.querySelector('.delete-project-modal')) {
@@ -555,6 +781,7 @@ html.tm-akapon-page-tasks
       return;
     }
   }
+
   function scan() {
     document.querySelectorAll('.swal2-popup').forEach(processPopup);
   }
