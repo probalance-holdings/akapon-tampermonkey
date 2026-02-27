@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜左上メニュー）※akapon-project-menu-buttons_html_css.user.js
+// @name         ヘッダー｜左上メニュー※header-left-menu.user.js
 // @namespace    akapon
-// @version      20260224 1300
+// @version      20260227 1800
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-menu-buttons_html_css.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-menu-buttons_html_css.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-left-menu.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-left-menu.user.js
 // ==/UserScript==
 
 (() => {
