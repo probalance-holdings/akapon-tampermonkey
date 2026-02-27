@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         校正画面｜ヘッダー※-screen-header.user.js
+// @name         校正画面｜ヘッダー※screen-header.user.js
 // @namespace    akapon
 // @version      20260227_0001
 // @match        https://member.createcloud.jp/*
@@ -308,6 +308,13 @@ html body #navbar-common .tm-proof-sep-right{
     min-width: 0 !important;
     width: 100% !important;
   }
+}
+
+html body #navbar-common #plan-header-toggle-btn img{
+  width: 20px !important;
+  height: 14px !important;
+  position: relative !important;
+  top: -1px !important;
 }
 `;
   }
