@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         アカポン（右上アバター）※akapon-avatar_html_css.user.js
+// @name         ヘッダー｜右上アバター※header-avata.user.js
 // @namespace    akapon
-// @version      20260224 1400
+// @version      20260227 1600
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-avatar_html_css.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-avatar_html_css.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-avata.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-avata.user.js
 // ==/UserScript==
 
 (() => {
@@ -338,7 +338,15 @@ ${MENU_SELECTOR} .avatar-modal-icon{
   }
 }
 
-
+/* ログアウトボタンを他項目と同じにする */
+.dropdown-menu.last-drop-down.dropdown-menu-right button.dropdown-item{
+  display:flex !important;
+  align-items:center !important;
+  padding: 10px 14px !important;
+  font-weight: 700 !important;
+  width:100% !important;
+  text-align:left !important;
+}
     `.trim();
 
 
