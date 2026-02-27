@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name         アカポン（管理画面｜検索）※akapon-header-help-search.user.js
+// @name         ヘッダー｜検索機能※header-help-search.user.js
 // @namespace    akapon
-// @version      20260221 1500
+// @version      20260227 1800
 // @match        https://member.createcloud.jp/*
 // @match        https://akapon.jp/*
 // @match        https://kanritools.com/*
 // @run-at       document-start
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-help-search.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-header-help-search.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-help-search.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-help-search.user.js
 // ==/UserScript==
 
 (() => {
@@ -322,7 +322,6 @@ return;
   /* 追加：文字が小さく見える現象の対策 */
   text-shadow: 0 1px 2px rgba(0,0,0,.55) !important;
 }
-
 #${BTN_ID}:hover{
   transform: translateY(-1px) !important;
   box-shadow:
