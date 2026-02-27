@@ -152,7 +152,7 @@ html body #navbar-common #plan-header-toggle-btn img{
 html body #navbar-common #akapon-help-btn,
 html body #navbar-common a.drop_btn,
 html body #navbar-common .nav-notification a.drop_btn,
-html body #navbar-common .user_info button{
+html body #navbar-common .user_info > button.btn-dropdown-logout{
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
