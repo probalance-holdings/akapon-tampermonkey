@@ -1,12 +1,10 @@
 // ==UserScript==
-// @name         8｜アカポン（校正画面｜動画を◀▶で5秒早送｜巻き戻す※akapon-screen-Rewind_js.user.js
+// @name         校正画面｜動画を◀▶で5秒早送｜巻き戻す※screen-Rewind_js.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      20260227 1800
 // @match        https://member.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-screen-Rewind_js.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-screen-Rewind_js.user.js
 // ==/UserScript==
 
 (() => {
@@ -55,12 +53,7 @@
     const css = `
 /* ===== TM Rewind buttons (校正画面) ===== */
 .tm-rewind-wrap{
-  position: fixed !important;
-  right: 14px !important;
-  bottom: 14px !important;
-  display: flex !important;
-  gap: 10px !important;
-  z-index: 2147483647 !important;
+  display: none !important;
 }
 
 .tm-rewind-btn{
