@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         アカポン（管理画面｜ヘッダー）※akapon-header-search.user.js
+// @name         ヘッダー｜管理画面※header-main.user.js
 // @namespace    akapon
 // @version      20262024 2300
 // @match        https://member.createcloud.jp/*
