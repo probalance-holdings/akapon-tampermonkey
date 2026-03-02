@@ -6,6 +6,8 @@
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-end
 // @grant        GM_addStyle
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-modal-header-master.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-modal-header-master.user.js
 // ==/UserScript==
 
 (() => {
