@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         済｜全ファイルページ｜※done-all-files.user.js
 // @namespace    akapon
-// @version      20260302-1002
+// @version      20260302 2300
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-start
@@ -11,6 +11,14 @@
 
 (function() {
   'use strict';
+
+  // =====================================================
+  // このscriptは「全ファイル」ページだけで動かす
+  // - 他ページ（例：/projects）に table-project 系があっても影響させない
+  // =====================================================
+  const p = location.pathname || '';
+  const IS_ALL_FILES_PAGE = (p === '/all_akaire_files' || p.startsWith('/all_akaire_files/'));
+  if (!IS_ALL_FILES_PAGE) return;
 
 // =====================================================
 // 【エンジニア確認依頼】/all_akaire_files（SP）ステータス選択モーダル
@@ -83,10 +91,11 @@
       padding-bottom: 6px !important;
     }
 
-    /* まず tbody の td 自体を確実に固定 */
+    /* まず tbody の td 自体を確実に固定（thead＝タイトル行は触らない） */
     html body table.table-project.table-project-newstyle > tbody > tr > td {
       font-size: 0.9em !important;
       line-height: 1.35 !important;
+      font-weight: 500 !important;
     }
 
     /* td 内の主要要素も確実に継承させる（個別に 14px!important 等が当たっても勝つ） */
@@ -101,8 +110,18 @@
     html body table.table-project.table-project-newstyle > tbody > tr > td select,
     html body table.table-project.table-project-newstyle > tbody > tr > td textarea,
     html body table.table-project.table-project-newstyle > tbody > tr > td img {
-      font-size: 0.95em !important;
+      font-size: 1em !important;
       line-height: 1.35 !important;
+
+      /* ★中身側も同じ書体/太さに寄せる（theadには影響しない） */
+      font-family: "UD デジタル 教科書体 NP-R", "UD Digi Kyokasho NP-R",
+                   "BIZ UDPGothic", "BIZ UDゴシック",
+                   "Meiryo UI", "Meiryo",
+                   "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro",
+                   "Yu Gothic UI", "Yu Gothic",
+                   "Noto Sans JP",
+                   system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important;
+      font-weight: 500 !important;
     }
 
     /* =========================================
@@ -139,26 +158,65 @@
 
     /* =========================================
        ステータス列：文字だけ左寄せ（アイコン位置はそのまま）
-       - 列や d-flex の中央寄せは触らない
-       - status-text を固定幅の箱にして、箱の中だけ左寄せ
        ========================================= */
-    html body table.table.table-project.table-project-newstyle span.status-text {
+    html body table.table.table-project.table-project-newstyle
+    tbody > tr > td:last-child{
+      text-align: left !important;
+    }
+
+    html body table.table.table-project.table-project-newstyle
+    tbody > tr > td:last-child span.status-text{
       display: inline-block !important;
-      width: 4.6em !important;        /* ← 揃え幅（必要なら 5.0em） */
-      text-align: left !important;     /* ← 文字だけ左寄せ */
-      margin-left: 10px !important;    /* ← ml-3 を維持しつつ微調整 */
+      width: 4.6em !important;
+      text-align: left !important;
+      margin-left: 3px !important;
       white-space: nowrap !important;
+      font-weight: 400 !important; /* ステータス文字は太字にしない */
+    }
+
+    html body table.table.table-project.table-project-newstyle
+    tbody > tr > td:last-child span.open-select-status-modal.style-point.akaire_file_status_point{
+      font-size: 1em !important;
+      line-height: 1 !important;
+      display: inline-block !important;
+      transform: translateY(2px) !important;
+      margin-left: 0 !important;
+      margin-right: 6px !important;
+      margin-top: 3px;
     }
 
     /* =========================================
-       ステータス●（textContentの「●」）を大きくする
+       SP不具合修正
+       ❶ ファイル名列に出てしまう「ステータス用の色span」を消す
+       ❷ ステータス列を左寄せ（左10pxあける）
+       ❸ ステータス文字は太字にしない（念のためSPで確定）
        ========================================= */
-    html body table.table.table-project.table-project-newstyle
-    span.open-select-status-modal.style-point.akaire_file_status_point {
-      font-size: 22px !important;   /* ←大きさ（20〜26で調整） */
-      line-height: 1 !important;
-      display: inline-block !important;
-      transform: translateY(-1px) !important; /* ←縦位置微調整（不要なら0） */
+    @media (max-width: 768px){
+      /* ❶ ファイル名列（1列目）にある余計な status span（色違い）を非表示 */
+      html body table.table.table-project.table-project-newstyle
+      tbody > tr > td:nth-child(1) span.status_red.show-color-of-status-task,
+      html body table.table.table-project.table-project-newstyle
+      tbody > tr > td:nth-child(1) span.status_gray.show-color-of-status-task,
+      html body table.table.table-project.table-project-newstyle
+      tbody > tr > td:nth-child(1) span.status_green.show-color-of-status-task,
+      html body table.table.table-project.table-project-newstyle
+      tbody > tr > td:nth-child(1) span.status_orange.show-color-of-status-task{
+        display: none !important;
+      }
+
+      /* ❷ ステータス列（最終列）内の d-flex が中央寄せなので、左寄せに上書き */
+      html body table.table.table-project.table-project-newstyle
+      tbody > tr > td:last-child > div.d-flex.align-items-center{
+        justify-content: flex-start !important;
+        padding-left: 1px !important;
+      }
+
+      /* ❷ ステータス文字の余計な ml を打ち消して、左10pxの中で自然に並べる */
+      html body table.table.table-project.table-project-newstyle
+      tbody > tr > td:last-child span.status-text{
+        margin-left: 6px !important;     /* ●との間隔だけにする（左余白は親の10pxで確保） */
+        font-weight: 400 !important;     /* ❸ 念押し */
+      }
     }
 
     /* =========================================
@@ -175,16 +233,18 @@
        ❷ 本文（tbody）の 3列(ファイル名) / 4列(完成者) / 7列(完成日) だけ太字
        - thead（タイトル文字）は変更しない
        ========================================= */
-    html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(3),
-    html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(4),
-    html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(7){
-      font-weight: 800 !important;
-    }
-    /* aタグなども確実に太字 */
-    html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(3) a,
-    html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(4) a,
-    html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(7) a{
-      font-weight: 800 !important;
+    /* PC（列数が多い前提）だけ太字を適用。SP(3列)でステータスが太字になるのを防ぐ */
+    @media (min-width: 1024px){
+      html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(3),
+      html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(4),
+      html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(7){
+        font-weight: 800 !important;
+      }
+      html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(3) a,
+      html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(4) a,
+      html body table.table.table-project.table-project-newstyle tbody > tr > td:nth-child(7) a{
+        font-weight: 800 !important;
+      }
     }
 
 /* =========================================
@@ -201,9 +261,17 @@ html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfile
   outline-offset: -2px !important;
 }
 
-    html body table.table.table-project.table-project-newstyle > thead * {
-      font-size: inherit !important;
-    }
+html body table.table.table-project.table-project-newstyle > thead * {
+  font-size: inherit !important;
+}
+
+/* 1024×1366（iPad Pro縦想定）：thead 自体を小さくして、* は inherit で追従させる */
+@media (width: 1024px) and (height: 1366px){
+  html body table.table.table-project.table-project-newstyle > thead{
+    font-size: 0.88em !important;
+    line-height: 1.2 !important;
+  }
+}
 
 /* =========================================
    SP：ファイル名列の余計な横線を消す（対象を絞る）
@@ -257,8 +325,8 @@ html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfile
        ========================================= */
     @media (max-width: 768px){
       html body table.table.table-project.table-project-newstyle thead tr.bg-primary > th.text-center.text-light{
-        font-size: 1.0em !important;
-        line-height: 1.2 !important;
+        font-size: 0.85em !important;
+        line-height: 0 !important;
       }
     }
 
@@ -299,7 +367,85 @@ html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfile
         overflow: hidden !important;
         text-overflow: ellipsis !important;
       }
+   }
+
+    /* =========================================
+       ❸ モーダルを画面中央に（iPadサイズ帯だけ）
+       - 768×1024 / 820×1180 の想定
+       - スマホ（<=768）は既に中央なので触らない
+       ========================================= */
+    @media (min-width: 768px) and (max-width: 1180px){
+      html body .modal.show{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      html body .modal.show .modal-dialog{
+        margin: 0 auto !important;
+      }
     }
+
+    /* =========================================
+       iPad帯：更新日/作成日/完成日 を改行させない＋サイズ調整
+       （tm-date-cell はJSで付与）
+       ========================================= */
+@media (min-width: 769px) and (max-width: 1180px){
+  html body table.table-project.table-project-newstyle
+  tbody > tr > td.tm-date-cell{
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    font-size: 0.88em !important;
+    line-height: 1.2 !important;
+  }
+
+  /* iPad：日付列（更新日/作成日/完成日）を少し広げる */
+  html body table.table-project.table-project-newstyle thead th.tm-date-col,
+  html body table.table-project.table-project-newstyle tbody td.tm-date-cell{
+    width: 88px !important;   /* ←まずは少しだけ広げる。足りなければ 96px/104px */
+    max-width: 88px !important;
+  }
+
+  /* iPad：その分、プロジェクト/タスク/ファイル名を少しだけ狭める（列番号は例） */
+
+  html body table.table-project.table-project-newstyle thead th:nth-child(2),
+  html body table.table-project.table-project-newstyle tbody td:nth-child(2){
+    width: 18% !important;
+  }
+  html body table.table-project.table-project-newstyle thead th:nth-child(3),
+  html body table.table-project.table-project-newstyle tbody td:nth-child(3){
+    width: 18% !important;
+  }
+  html body table.table-project.table-project-newstyle thead th:nth-child(4),
+  html body table.table-project.table-project-newstyle tbody td:nth-child(4){
+    width: 8% !important;
+  }
+  html body table.table-project.table-project-newstyle thead th:nth-child(5),
+  html body table.table-project.table-project-newstyle tbody td:nth-child(5){
+    width: 10% !important;
+  }
+  html body table.table-project.table-project-newstyle thead th:nth-child(6),
+  html body table.table-project.table-project-newstyle tbody td:nth-child(6){
+    width: 10% !important;
+  }
+  html body table.table-project.table-project-newstyle thead th:nth-child(7),
+  html body table.table-project.table-project-newstyle tbody td:nth-child(7){
+    width: 10% !important;
+  }
+  html body table.table-project.table-project-newstyle thead th:nth-child(8),
+  html body table.table-project.table-project-newstyle tbody td:nth-child(8){
+    width: 8% !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .modal-status-project-sp .modal-content {
+    width: calc(100vw - 50px) !important;   /* 左右 25px ずつ余白 */
+    max-width: 1000px !important;           /* 1024幅でも収まる上限（必要なら 960/980 に） */
+    margin: 0 auto !important;              /* 中央寄せ */
+  }
+}
   `;
 
   // document-start 直後：まず1回注入
@@ -467,24 +613,38 @@ html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfile
   // - モーダル内の .file-info-name（本来のファイル名）を正として、表示直前に毎回反映
   // - 監視なし（イベント1本）
   // =====================================================
-  function bindFileInfoModalTitleFixOnce(){
+function bindFileInfoModalTitleFixOnce(){
     if (window.__tmAllFilesFileInfoTitleFixBound) return;
     window.__tmAllFilesFileInfoTitleFixBound = true;
 
-    document.addEventListener('show.bs.modal', (e) => {
-      const modal = e.target;
+    const apply = (modal) => {
       if (!modal || !(modal instanceof HTMLElement)) return;
 
-      const headerTitle = modal.querySelector('.tm-file-modal-header .tm-file-header-title-text');
-      if (!headerTitle) return;
-
+      // 「ファイル情報モーダル」だけを対象にする（.file-info-name がある）
       const nameEl = modal.querySelector('.modal-header.tm-file-original-header-hidden .file-info-name');
       const fileName = (nameEl ? (nameEl.textContent || '').trim() : '');
-
       if (!fileName) return;
 
-      headerTitle.textContent = `${fileName} 情報 ×`;
-    }, true);
+      const headerTitle = modal.querySelector('.tm-file-modal-header .tm-file-header-title-text');
+      if (headerTitle) {
+        // ❷ タイトル末尾の「×」が入らないよう、常に × なしで上書き
+        headerTitle.textContent = `${fileName} 情報`;
+      }
+
+      // ❶ iPad中央寄せ用：このモーダルだけ識別クラス
+      modal.classList.add('tm-allfiles-fileinfo-modal');
+
+      // 閉じたら解除（他モーダルへ影響させない）
+      const onHidden = () => {
+        modal.classList.remove('tm-allfiles-fileinfo-modal');
+        modal.removeEventListener('hidden.bs.modal', onHidden);
+      };
+      modal.addEventListener('hidden.bs.modal', onHidden);
+    };
+
+    document.addEventListener('show.bs.modal', (e) => apply(e.target), true);
+    // 念のため shown でも再適用（システム側が後から書き換えるケース対策）
+    document.addEventListener('shown.bs.modal', (e) => apply(e.target), true);
   }
 
   // =====================================================
