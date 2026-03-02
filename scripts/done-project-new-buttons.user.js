@@ -1,11 +1,13 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜最初のプロジェクト作成）※akapon-project-new-buttons-_html_css.user.js
+// @name         済｜プロジェクト｜最初のプロジェクト作成※done-project-new-buttons.user.js
 // @namespace    akapon
 // @version      20260225 1800
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-project-new-buttons.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-project-new-buttons.user.js
 // ==/UserScript==
 
 (() => {
@@ -265,16 +267,20 @@ html body .modal-content.bg-black a.tm-back-top:hover{
       a2.innerHTML = `プロジェクトのみ作成<span class="tm-sub">（データ作成は後にする）</span>`;
     }
 
-    // 先頭の「・」を消す（テキストノードだけ削除）
-    const box = modal.querySelector('.align-center-div');
-    if (box) {
-      [...box.childNodes].forEach((n) => {
-        if (n.nodeType === Node.TEXT_NODE && n.textContent.includes('・')) {
-          n.textContent = n.textContent.replace(/・/g, '');
-          if (!n.textContent.trim()) n.remove();
-        }
-      });
+// 余計な「・」だけ消す（単体のテキストノードに限定）
+// ※ 「・プロジェクトを新しく作成する」の「・」は消さない
+const box = modal.querySelector('.align-center-div');
+if (box) {
+  [...box.childNodes].forEach((n) => {
+    if (n.nodeType !== Node.TEXT_NODE) return;
+
+    // 改行・空白などを除いた結果が「・」だけのノードのみ削除
+    const t = (n.textContent || '').replace(/\s+/g, '');
+    if (t === '・') {
+      n.remove();
     }
+  });
+}
 
     // 既存CSS（または inline）に負ける場合があるので、ここで確定上書き
     const pcBox = modal.querySelector('.align-center-div');
