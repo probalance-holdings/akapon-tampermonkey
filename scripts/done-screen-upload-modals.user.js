@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name         済｜校正画面｜アップロード周りモーダル調整｜保存3秒｜YouTube広告｜バージョン更新※screen-upload-modals.user.js
+// @name         済｜校正画面｜アップロード周りモーダル調整｜保存3秒｜YouTube広告｜バージョン更新※done-screen-upload-modals.user.js
 // @namespace    akapon
 // @version      1.0
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-upload-modals.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-upload-modals.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-upload-modals.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-upload-modals.user.js
 // ==/UserScript==
 
 /* =========================================================
