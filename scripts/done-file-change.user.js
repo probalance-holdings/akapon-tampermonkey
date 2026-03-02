@@ -1,13 +1,14 @@
 // ==UserScript==
-// @name         アカポン（ファイルの保存先を変更modal）※akapon-file-change-_html_css.user.js
+// @name         済｜ファイルの保存先を変更modal※done-file-change.user.js
 // @namespace    akapon
-// @version      20260222 1200
+// @version      20260224 2200
 // @description  Unified: file menu back links + project change modal (search/pager) + swal center + modal stack normalization
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-file-change-_html_css.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-file-change-_html_css.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-file-change.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-file-change.user.js
 // ==/UserScript==
 
 (() => {
@@ -40,7 +41,6 @@
     if (path.startsWith('/akaire_feature/akaire_files/')) return true;
     return false;
   }
-
   // =========================================================
   // CSS（t1 + t2 を統合：重複は整理、機能は全部残す）
   // =========================================================
@@ -52,91 +52,10 @@
    TM: SweetAlert2（new_alert_popup）中央統一
    - 通知（文字だけ）：中央で1秒表示（JSで閉じる）
    - 確認（OKあり）：中央で固定（JSで閉じない）
+   ---------------------------------------------------------
+   ※ デザイン（角丸／グラデーションヘッダーなど）は
+      akapon-swal2-modal-common_base.user.js 側で制御
    ========================================================= */
-.swal2-container{
-  align-items: center !important;
-  justify-content: center !important;
-}
-.swal2-popup.new_alert_popup{
-  position: relative !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-
-  margin: 0 !important;
-
-  border-radius: 14px !important;
-  overflow: hidden !important;
-
-  box-shadow: 0 10px 28px rgba(0,0,0,.28) !important;
-}
-.swal2-popup.new_alert_popup .swal2-title{
-  margin: 0 !important;
-  padding: 12px 14px !important;
-  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
-  color: #fff !important;
-  font-weight: 900 !important;
-  font-size: 14px !important;
-}
-.swal2-popup.new_alert_popup .swal2-html-container{
-  margin: 0 !important;
-  padding: 14px !important;
-}
-.swal2-popup.new_alert_popup .swal2-actions{
-  margin: 0 !important;
-  padding: 0 14px 14px 14px !important;
-}
-
-/* =========================================================
-   TM: モーダルタイトル行（共通）追尾固定（sticky）
-   ========================================================= */
-.modal.show .modal-content .modal-header{
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 60 !important;
-}
-
-/* 参考：ベース（tm-share-url-modal のヘッダー） */
-.modal.show .modal-content.text-center.tm-share-url-modal .modal-header,
-.modal.show .modal-content.text-center.tm-share-url-modal > .modal-header{
-  display: block !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 10px 14px !important;
-  font-weight: 900 !important;
-  color: #fff !important;
-  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
-  border-radius: 12px 12px 0 0 !important;
-}
-
-/* =========================================================
-   TM: ファイルメニュー modal（h5.title-modal-file-menu をヘッダー扱い）
-   ========================================================= */
-.modal.show .modal-content.text-center .modal-body.p-0 > h5.title-modal-file-menu{
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 60 !important;
-
-  display: block !important;
-  width: 100% !important;
-
-  margin: 0 !important;
-  padding: 10px 14px !important;
-
-  font-weight: 900 !important;
-  color: #fff !important;
-  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
-
-  border-radius: 12px 12px 0 0 !important;
-}
-.modal.show .modal-content.text-center .modal-body.p-0 > h5.title-modal-file-menu img{
-  filter: brightness(0) invert(1) !important;
-}
-.modal.show .modal-content.text-center .modal-body.p-0 > h5.title-modal-file-menu .default-project-name{
-  color: #fff !important;
-  opacity: .95 !important;
-}
 
 /* =========================================================
    TM: modal は常に画面中央（既存JSには触らず表示位置だけ強制）
@@ -1083,7 +1002,8 @@ html body img.menu-akaire-file-icon.menu-akaire-file-icon{
   // =========================================================
   // TM: 「ファイルの保存先を変更」行（t1）
   // - 行のどこをクリックしても selectProjectForChange を実行
-  // =========================================================
+  //   ＋ 戻る後に再度クリックしても開かない場合のフォールバック付き
+  // ==========================================================
   function enableSaveDestRowAllClickableOnce() {
     if (!document.body) return;
     if (document.body.dataset.akaponSaveDestAllClickable === '1') return;
@@ -1121,11 +1041,33 @@ html body img.menu-akaire-file-icon.menu-akaire-file-icon{
       ev.stopPropagation();
       if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
 
+      // 元々の処理：AkaireFile.selectProjectForChange を呼び出す
       if (window.AkaireFile && typeof window.AkaireFile.selectProjectForChange === 'function') {
         try {
           window.AkaireFile.selectProjectForChange(t, projectId);
         } catch (_) {}
       }
+
+      // フォールバック：
+      // 「プロジェクト先の変更」モーダルが開いていなければ、こちらで強制表示
+      setTimeout(() => {
+        try {
+          const modal = document.getElementById('modal-change-position-akaire-file-project');
+          if (!modal) return;
+
+          const cs = window.getComputedStyle(modal);
+          const visible =
+            modal.classList.contains('show') ||
+            cs.display !== 'none';
+
+          if (!visible) {
+            // Bootstrap / jQuery / フォールバックで表示
+            showModalCompat(modal);
+          }
+        } catch (_) {
+          // ここでの例外は握りつぶす（他の処理には影響させない）
+        }
+      }, 300);
     }, true);
   }
 
@@ -1379,12 +1321,10 @@ html body img.menu-akaire-file-icon.menu-akaire-file-icon{
       }, true);
     }
 
-    const header = document.createElement('div');
-    header.className = 'modal-header tm-project-change-header';
-    header.textContent = titleText;
-    header.appendChild(backLink);
-
-    modalContent.insertBefore(header, modalBody);
+    // タイトル行は「モーダル｜タイトル行ヘッダー共通・司令塔」側で
+    // 一括制御するため、このスクリプトでは追加の .modal-header
+    // （tm-project-change-header）を生成しない（重複防止）。
+    // 戻るボタンの挙動も司令塔側に任せる。
   }
 
   function setupAcceptChangeHeader() {
@@ -1485,63 +1425,12 @@ html body img.menu-akaire-file-icon.menu-akaire-file-icon{
     const ensureAcceptHeader = (modalEl) => {
       if (!modalEl) return;
 
-      const modalContent = modalEl.querySelector('.modal-content');
-      const modalBody = modalEl.querySelector('.modal-body');
-      if (!modalContent || !modalBody) return;
-
-      let header = modalContent.querySelector('.modal-header.tm-project-change-header');
-      if (!header) {
-        header = document.createElement('div');
-        header.className = 'modal-header tm-project-change-header';
-        header.textContent = '変更後のプロジェクト先保管先';
-
-        const back = document.createElement('a');
-        back.href = 'javascript:void(0)';
-        back.className = 'text-underline text-black back-text-link';
-        back.textContent = '戻る';
-        header.appendChild(back);
-
-        modalContent.insertBefore(header, modalBody);
-      }
-
-      modalEl.classList.add('tm-accept-header-ready');
-
-      const backLink = header.querySelector('a.back-text-link');
-      if (!backLink) return;
-
-      if (backLink.dataset.tmBound === '1') return;
-      backLink.dataset.tmBound = '1';
-
-      backLink.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-
-        hideMenuModals();
-        forceClearModalOverlay();
-
-        const projectModal = document.getElementById(PROJECT_ID);
-
-        const onHiddenOnce = () => {
-          modalEl.removeEventListener('hidden.bs.modal', onHiddenOnce, true);
-          hideMenuModals();
-          forceClearModalOverlay();
-          if (projectModal) showByBs(projectModal);
-          hideMenuModals();
-        };
-
-        modalEl.addEventListener('hidden.bs.modal', onHiddenOnce, true);
-
-        hideByBs(modalEl);
-
-        setTimeout(() => {
-          hideMenuModals();
-          forceHide(modalEl);
-          forceClearModalOverlay();
-          if (projectModal) forceShow(projectModal);
-          hideMenuModals();
-        }, 180);
-      }, true);
+      // タイトル行と「戻る」ボタンは
+      // 「モーダル｜タイトル行ヘッダー共通・司令塔」側で一括制御するため、
+      // このスクリプトではヘッダーDOMの生成やイベント付与は行わない。
+      //
+      // ※ ここで header を追加してしまうと、
+      //    司令塔側のヘッダーと二重表示になるため除外。
     };
 
     document.addEventListener('shown.bs.modal', (e) => {
@@ -1637,34 +1526,23 @@ function setupFinalConfirmModal() {
   };
 
   const ensureHeader = (modalContent) => {
-  if (!modalContent) return;
+    if (!modalContent) return;
 
-  if (modalContent.dataset.tmFinalConfirmReady === '1') return;
+    if (modalContent.dataset.tmFinalConfirmReady === '1') return;
 
-  const body = modalContent.querySelector('.modal-body');
-  if (!body) return;
+    const body = modalContent.querySelector('.modal-body');
+    if (!body) return;
 
-  // ★このモーダルだけをCSSで狙えるようにクラス付与
-  modalContent.classList.add('tm-final-confirm-content');
-  const root = getModalRoot(modalContent);
-  if (root && root.classList) root.classList.add('tm-final-confirm-root');
+    // ★このモーダルだけをCSSで狙えるようにクラス付与
+    modalContent.classList.add('tm-final-confirm-content');
+    const root = getModalRoot(modalContent);
+    if (root && root.classList) root.classList.add('tm-final-confirm-root');
 
-  // header挿入（存在すれば何もしない）
-  if (!modalContent.querySelector('.tm-final-confirm-header')) {
-    const header = document.createElement('div');
-    header.className = 'tm-final-confirm-header';
-
-    const title = document.createElement('span');
-    title.className = 'tm-final-confirm-title';
-    title.textContent = '保存先最終確認';
-
-    header.appendChild(title);
-    modalContent.insertBefore(header, body);
-  }
-
-  modalContent.dataset.tmFinalConfirmReady = '1';
-};
-
+    // タイトル行は司令塔（モーダル共通ヘッダー）側で制御するため、
+    // ここでは .tm-final-confirm-header を生成しない（重複防止）。
+    // 既存のヘッダー構造のみを利用する。
+    modalContent.dataset.tmFinalConfirmReady = '1';
+  };
   const ensureBackButtonNextToOk = (modalContent) => {
     if (!modalContent) return;
 
