@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         済｜共通｜モーダル｜見た目差分の確認用※done-common-modal-difference.user.js
 // @namespace    akapon
-// @version      20260226_1000
+// @version      20260302 2300
 // @description  モーダルタイトル行の“見た目差分”を一時的にそろえるための確認用スクリプト
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
@@ -1139,5 +1139,35 @@ function unifyStatusModal() {
   document.addEventListener('click', function(){
     setTimeout(unifyStatusModal, 0);
   }, true);
+
+  // ========================================================
+  // 【共通】モーダルタイトル末尾の「×/✕」だけ削除
+  // - 対象：.tm-file-header-title-text
+  // - 末尾に付く場合のみ削除（文中の×は触らない）
+  // ========================================================
+  function sanitizeModalHeaderTitleX(){
+    var titles = document.querySelectorAll(
+      '.modal.show .tm-file-modal-header .tm-file-header-title-text,' +
+      '.modal-content[data-tm-shadow-bound="1"] .tm-file-modal-header .tm-file-header-title-text'
+    );
+    if (!titles || !titles.length) return;
+
+    titles.forEach(function(el){
+      if (!el || typeof el.textContent !== 'string') return;
+      var t = el.textContent;
+
+      // 末尾だけ削除（例：「ファイル4 情報 ×」→「ファイル4 情報」）
+      var cleaned = t.replace(/\s*[×✕]\s*$/g, '');
+      if (cleaned !== t) el.textContent = cleaned;
+    });
+  }
+
+  // クリック後にDOMが組まれる系が多いので、既存方針に合わせて軽く追従
+  document.addEventListener('click', function(){
+    setTimeout(sanitizeModalHeaderTitleX, 0);
+  }, true);
+
+  // 念のため初回も実行
+  sanitizeModalHeaderTitleX();
 
 })();
