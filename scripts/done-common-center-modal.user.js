@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         共通｜削除や確認系の画面中央modal※common-center-modal.user.js
+// @name         済｜共通｜削除や確認系の画面中央modal※done-common-center-modal.user.js
 // @namespace    akapon
 // @version      20260227 1500
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-swal2-modal-common_base.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-swal2-modal-common_base.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-center-modal.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-center-modal.user.js
 // ==/UserScript==
 
 (() => {
