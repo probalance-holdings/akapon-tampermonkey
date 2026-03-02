@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         アカポン（プロジェクト｜ID～件数ボタンを非表示)※akapon-project-hide-filter-buttons-close_html.user.js
+// @name         済｜共通｜検索・絞り込み｜ボタン非表示※done-common-buttons-close.user.js
 // @namespace    akapon
 // @version      2026.02.20.1200
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-hide-filter-buttons-close_html.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-project-hide-filter-buttons-close_html.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-buttons-close.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-buttons-close.user.js
 // ==/UserScript==
 
 (() => {
