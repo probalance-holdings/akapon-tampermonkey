@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         済｜ファイル｜サムネイル※file-thumbnail.user.js
+// @name         ファイル｜サムネイル※file-thumbnail.user.js
 // @namespace    akapon
 // @version      20260222 1200
 // @match        https://member.createcloud.jp/*
