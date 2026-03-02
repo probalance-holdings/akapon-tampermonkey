@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         アカポン（共通｜並び順）※akapon-unified-sort.user.js
+// @name         共通｜並び順※common-unified-sort.user.js
 // @namespace    akapon
 // @version      20260225 1300
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-unified-sort.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-unified-sort.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/common-unified-sort.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/common-unified-sort.user.js
 // ==/UserScript==
 
 (() => {
@@ -52,7 +53,35 @@
    - DOM の移動は禁止（既存 SearchForm / Visiable.toggle の構造が壊れるため）
    - 並び順モーダル内のアイコン除去や「＋の右側縦線」統一はここで制御する
 
-========================================================= */
+   ■ 修正点
+//
+// ❶ リリース時の既存データ問題（履歴の欠損）
+//  - 現状、過去に「完成」になった履歴データ（既存の完成済みファイル）に
+//    「完成者」「完成日」が保存されていない / 返ってきていない可能性があります。
+//  - そのため UI 側で「完成者」「完成日」を表示・並び順に利用できず、
+//    Tampermonkey側では補完ができません。
+//  - 対応方針：
+//    ・DB/履歴テーブルに完成者ID・完成日時が保持されているか確認
+//    ・API/一覧取得のレスポンスに completed_by / completed_at（相当フィールド）が含まれるか確認
+//    ・未保存の場合は、リリース時の移行（バックフィル）で既存完了分に値を埋める
+//
+// ❷ 完成日ソートの挙動不正（未完了が上に来る）
+//  - 要件：
+//    ・「古い順」：完成日の古い順（completed_at ASC）から上に表示される
+//    ・「新しい順」：完成日の新しい順（completed_at DESC）から上に表示される
+//  - 現状：
+//    ・「新しい順」で、完成していない（completed_at が NULL の）ファイルが上に来る挙動が発生。
+//  - 想定原因：
+//    ・NULL の並び順が DESC で先頭扱いになっている
+//    ・またはソートキーが completed_at ではなく別キー（更新日等）に寄っている
+//  - 対応方針（例）：
+//    ・completed_at が NULL の行は常に末尾に送る（NULLS LAST 相当）
+//      例）ORDER BY (completed_at IS NULL) ASC, completed_at DESC/ASC
+//    ・完了状態のみを対象にする/または未完了は completed_at を参照しない等、仕様を確定
+//
+// ※Tampermonkey側は「表示文言」「並び替えUI」しか調整できないため、
+//   completed_by / completed_at の保存・取得・ソートの正はシステム側での対応が必要です。
+// ========================================================
 
 /* =========================================================
 【エンジニア向け対応依頼｜SP並び順の統一について】
@@ -125,8 +154,12 @@ const PAGE_CONFIG = {
     // task / file は projects と同じ（タスク/ファイルは期限を実項目 due_date で使用）
     tasks: { sort: ['id', 'created_at_dummy', 'updated_at_dummy', 'due_date', 'size_dummy', 'status'] },
     files: { sort: ['id', 'created_at_dummy', 'updated_at_dummy', 'due_date', 'size_dummy', 'status'] },
-  };
 
+    // ✅ /all_akaire_files 専用（正しい順）
+    // 作成日 → 更新日 → 完成日 → 作成者 → 完成者 → ステータス
+    // ※更新日は「ダミー」ではなく実 updated_at を使う
+      all_files: { sort: ['created_at', 'updated_at', 'completed_at', 'created_by', 'complete_updater', 'status'] },
+  };
   // =========================================================
   // ページ判定
   // =========================================================
@@ -139,6 +172,9 @@ const PAGE_CONFIG = {
     // files
     if (/^\/akaire_file\/\d+\/project_akaire_files/.test(p)) return 'files';
     if (/^\/akaire_file\/\d+\/task_akaire_files/.test(p)) return 'files';
+
+    // ✅ 全ファイル一覧
+    if (p === '/all_akaire_files' || p.startsWith('/all_akaire_files/')) return 'all_files';
 
     // users
     if (p === '/users' || p.startsWith('/users/')) return 'users';
@@ -489,14 +525,22 @@ table.search-list *{
     return (t || '').replace(/\s+/g, ' ').trim();
   }
 
-  function detectSortKey(li) {
+function detectSortKey(li) {
     const labelEl = li.querySelector('.sort_item');
     const label = normalizeText(labelEl ? labelEl.textContent : '');
 
     // label優先
     if (/^ID$/i.test(label) || label === 'ID') return 'id';
+
+    // ✅ /all_akaire_files 用：先に判定（「作成」が衝突するため）
+    if (label.includes('作成者')) return 'created_by';
+    if (label.includes('完成者')) return 'complete_updater';
+    if (label.includes('完成日')) return 'completed_at';
+
+    // 日付系
     if (label.includes('作成')) return 'created_at';
     if (label.includes('更新')) return 'updated_at';
+
     if (label.includes('期限') || label.includes('締切') || label.includes('予定')) return 'due_date';
     if (label.includes('容量') || label.includes('サイズ')) return 'size';
     if (label.includes('ステータス') || /^status$/i.test(label) || label === 'Status') return 'status';
@@ -685,6 +729,12 @@ function applySortByConfig(pageKey) {
     normalizeUserLikePageSortOptions(ul);
   }
 
+  // ✅ /all_akaire_files 専用：日付系（q[s]=... asc/desc）の表示を「新しい順→古い順」に統一
+  // かつ「更新日」の .sort_item を指定HTMLに合わせる（ダミー表記を使わない）
+  if (pageKey === 'all_files') {
+    normalizeAllFilesSortOptions(ul);
+  }
+
   // 指定順に並べ替え（存在するものだけ）
   const map = new Map();
   allLis.forEach(li => {
@@ -791,7 +841,6 @@ function normalizeUserLikePageSortOptions(ul) {
     let newerOpt = null; // 新しい順
     let olderOpt = null; // 古い順
 
-    // テキストだけで「昇順 / 降順」を「新しい順 / 古い順」に寄せる
     opts.forEach(opt => {
       const a = opt.querySelector('a');
       if (!a) return;
@@ -804,19 +853,16 @@ function normalizeUserLikePageSortOptions(ul) {
       }
     });
 
-    // フォールバック：1番目＝新しい順、2番目＝古い順 とみなす
     if (!newerOpt && opts[0]) newerOpt = opts[0];
     if (!olderOpt && opts[1]) olderOpt = opts[1];
 
     if (!newerOpt || !olderOpt || newerOpt === olderOpt) return;
 
-    // 文言を統一
     const newerA = newerOpt.querySelector('a');
     const olderA = olderOpt.querySelector('a');
     if (newerA) newerA.textContent = '新しい順';
     if (olderA) olderA.textContent = '古い順';
 
-    // 並び順：新しい順 → 古い順
     const innerUl = li.querySelector(':scope > ul');
     if (!innerUl) return;
 
@@ -824,13 +870,120 @@ function normalizeUserLikePageSortOptions(ul) {
     frag.appendChild(newerOpt);
     frag.appendChild(olderOpt);
 
-    // 3つ以上あっても残りは順番維持で後ろへ
     opts.forEach(o => {
       if (o !== newerOpt && o !== olderOpt) frag.appendChild(o);
     });
 
     innerUl.appendChild(frag);
   });
+}
+
+// =========================
+// /all_akaire_files 専用
+// - 作成日/更新日：q[s]=field asc/desc を「新しい順→古い順」に統一（クリック時もテレコ防止）
+// - 更新日の sort_item を指定HTMLに合わせる（ダミー表記なし）
+// =========================
+function normalizeAllFilesSortOptions(ul) {
+  const rows = Array.from(ul.querySelectorAll(':scope > li.li-sort-item'));
+
+  const byKey = (k) => rows.find(li => (li.dataset.tmSortKey || detectSortKey(li)) === k);
+
+  const createdLi  = byKey('created_at');
+  const updatedLi  = byKey('updated_at');
+  const completeLi = byKey('completed_at');
+
+  // 作成日：新しい順 → 古い順（desc → asc）
+  if (createdLi) normalizeAllFilesDateOptionsByQ(createdLi, 'created_at');
+
+  // 更新日：ラベルHTMLを指定形に＋新しい順 → 古い順
+  if (updatedLi) {
+    const labelEl = updatedLi.querySelector('.sort_item');
+    if (labelEl) {
+      labelEl.innerHTML = [
+        '更新日',
+        '<div class="float-right" onclick="SearchForm.selectFilterDisplay(\'toggle\', \'.updated-at-filter\', event)"></div>'
+      ].join('');
+    }
+    normalizeAllFilesDateOptionsByQ(updatedLi, 'updated_at');
+  }
+
+  // 完成日：新しい順 → 古い順（desc → asc）
+  if (completeLi) normalizeAllFilesDateOptionsByQ(completeLi, 'completed_at');
+}
+
+function normalizeAllFilesDateOptionsByQ(li, field) {
+  const opts = Array.from(li.querySelectorAll('li.sort-option'));
+  if (opts.length < 2) return;
+
+  const getA = (node) => node.querySelector('a[href]');
+  const getHref = (node) => {
+    const a = getA(node);
+    return a ? (a.getAttribute('href') || '') : '';
+  };
+  const getText = (node) => {
+    const a = getA(node);
+    return normalizeText(a ? (a.textContent || '') : '');
+  };
+
+  // ✅ href から asc/desc を広めに判定（q[s] / q%5Bs%5D / sort_by / 完全一致以外も吸収）
+  const isAscHref = (href) => {
+    const h = href || '';
+    // q[s]=field+asc / q%5Bs%5D=field+asc / + が %20 の場合
+    if (new RegExp(`(?:q%5Bs%5D=|q\\[s\\]=)${field}(?:\\+|%20)asc`).test(h)) return true;
+    // sort_by[field]=asc / sort_by%5Bfield%5D=asc
+    if (new RegExp(`sort_by(?:%5B|\\[)${field}(?:%5D|\\])=asc`).test(h)) return true;
+    // 末尾が asc
+    if (/\basc\b/i.test(h) && new RegExp(`\\b${field}\\b`).test(h)) return true;
+    return false;
+  };
+
+  const isDescHref = (href) => {
+    const h = href || '';
+    if (new RegExp(`(?:q%5Bs%5D=|q\\[s\\]=)${field}(?:\\+|%20)desc`).test(h)) return true;
+    if (new RegExp(`sort_by(?:%5B|\\[)${field}(?:%5D|\\])=desc`).test(h)) return true;
+    if (/\bdesc\b/i.test(h) && new RegExp(`\\b${field}\\b`).test(h)) return true;
+    return false;
+  };
+
+  // ✅ text からも補助判定（「新しい」「古い」「降順」「昇順」など）
+  const isNewerText = (t) => (t.includes('新しい') || t.includes('降順'));
+  const isOlderText = (t) => (t.includes('古い') || t.includes('昇順'));
+
+  // 1) href判定を優先
+  let desc = opts.find(o => isDescHref(getHref(o))) || null;
+  let asc  = opts.find(o => isAscHref(getHref(o)))  || null;
+
+  // 2) hrefで取れない場合は text で補完
+  if (!desc) desc = opts.find(o => isNewerText(getText(o))) || null;
+  if (!asc)  asc  = opts.find(o => isOlderText(getText(o))) || null;
+
+  // 3) それでも取れない場合、元の並びに依存しないよう「押しやすい保険」はしない（誤判定防止）
+  if (!desc || !asc || desc === asc) return;
+
+  // ✅ 表示文言を統一（「古い」「新しい」も「古い順」「新しい順」に）
+  {
+    const a = desc.querySelector('a');
+    if (a) a.textContent = '新しい順';
+  }
+  {
+    const a = asc.querySelector('a');
+    if (a) a.textContent = '古い順';
+  }
+
+  // ✅ 順序：新しい順（desc）→ 古い順（asc）
+  const ulOpt = li.querySelector(':scope > ul');
+  if (!ulOpt) return;
+
+  const frag = document.createDocumentFragment();
+  frag.appendChild(desc);
+  frag.appendChild(asc);
+
+  // それ以外があれば後ろへ
+  opts.forEach(o => {
+    if (o !== desc && o !== asc) frag.appendChild(o);
+  });
+
+  ulOpt.appendChild(frag);
 }
 
 // =========================
