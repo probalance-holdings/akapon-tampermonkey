@@ -201,6 +201,35 @@ nav.pagy-bootstrap-nav .page-item:not(.active) .page-link:hover{
   color:#fff !important;
 }
 
+@media (max-width: 768px){
+  nav.pagy-bootstrap-nav{
+    margin: 12px 0 !important;
+    justify-content: flex-end !important; /* ★SPも右寄せ */
+  }
+
+  nav.pagy-bootstrap-nav .pagination{
+    gap: 6px !important;
+    flex-wrap: wrap !important; /* ページ数が多い時に横はみ出し防止 */
+    justify-content: flex-end !important; /* ★中身も右寄せ */
+  }
+
+  /* 数字ボタン（SP小さめ） */
+  nav.pagy-bootstrap-nav .page-item .page-link{
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    border-width: 1px !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+  }
+
+  /* 省略表示（…） */
+  nav.pagy-bootstrap-nav .page-item.gap .page-link{
+    padding: 0 4px !important;
+    font-size: 12px !important;
+  }
+}
+
 .render_pagy.project-pagy .pagination{
   box-shadow:none !important;
 }
