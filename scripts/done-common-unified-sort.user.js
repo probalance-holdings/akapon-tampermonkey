@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name         共通｜並び順※common-unified-sort.user.js
+// @name         済｜共通｜並び順※done-common-unified-sort.user.js
 // @namespace    akapon
 // @version      20260225 1300
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/common-unified-sort.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/common-unified-sort.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/done-common-unified-sort.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/done-common-unified-sort.user.js
 // ==/UserScript==
 
 (() => {
