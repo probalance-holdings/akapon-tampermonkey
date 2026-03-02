@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         共通｜検索・絞り込み※common-unified-filter.user.js
+// @name         済｜共通｜検索・絞り込み※done-common-unified-filter.user.js
 // @namespace    akapon
 // @version      20260225 1300
 // @match        https://member.createcloud.jp/*
