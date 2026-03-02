@@ -289,6 +289,38 @@ a.btn.bg-akapon.text-white.mt-2:hover{
     tip.style.left = `${Math.round(left)}px`;
     tip.style.transform = 'translateX(-50%)';
     tip.style.display = 'block';
+    tip.style.visibility = 'visible';
+  }
+
+  // ★左側で見切れない：アイコン左端を起点にして表示（必要に応じて左右に寄せる）
+  function showTipUnderLeft(el, text) {
+    const tip = ensureTip();
+    tip.textContent = text;
+
+    const rect = el.getBoundingClientRect();
+    const top = rect.bottom + 8;
+
+    // いったん計測用に表示（ユーザーには見せない）
+    tip.style.display = 'block';
+    tip.style.visibility = 'hidden';
+    tip.style.transform = 'none';
+
+    const tipW = tip.offsetWidth || 0;
+    const padding = 8;
+
+    // アイコン左端から文字を開始
+    let left = rect.left;
+
+    // 左に食い込むなら少し内側へ
+    if (left < padding) left = padding;
+
+    // 右に食い込むなら右端から戻す
+    const maxLeft = window.innerWidth - tipW - padding;
+    if (left > maxLeft) left = Math.max(padding, maxLeft);
+
+    tip.style.top = `${Math.round(top)}px`;
+    tip.style.left = `${Math.round(left)}px`;
+    tip.style.visibility = 'visible';
   }
 
   function hideTip() {
@@ -308,19 +340,27 @@ a.btn.bg-akapon.text-white.mt-2:hover{
       const editFileName = t.closest('img.edit-akaire-file-name-img');
       if (editFileName) return showTipUnder(editFileName, 'ファイル名');
 
-        const menuIcon = t.closest('img.three-dot, img[src*="akaire_thumb_menu"]');
-        if (menuIcon) return showTipUnder(menuIcon, 'メニュー');
+      const menuIcon = t.closest('img.three-dot, img[src*="akaire_thumb_menu"]');
+      if (menuIcon) return showTipUnder(menuIcon, 'メニュー');
 
       const editProjectName = t.closest('img.edit-project-name-img');
       if (editProjectName) return showTipUnder(editProjectName, 'プロジェクト名');
 
-        const statusDot = t.closest(
-            'span.project_status_point[data-toggle="modal"], span.akaire_file_status_point[data-toggle="modal"], span.thumb_akaire_file_status_point[data-toggle="modal"]'
-        );
-        if (statusDot) return showTipUnder(statusDot, 'ステータス');
+      // ★ステータス：プロジェクトthumb側（project_thumb_status_point）も対象に追加
+      const statusDot = t.closest(
+        [
+          'span.project_status_point[data-toggle="modal"]',
+          'span.akaire_file_status_point[data-toggle="modal"]',
+          'span.thumb_akaire_file_status_point[data-toggle="modal"]',
+          'span.project_thumb_status_point[data-toggle="modal"]' // ←追加
+        ].join(', ')
+      );
+      // ★左側で見切れない：アイコン左端から文字開始
+      if (statusDot) return showTipUnderLeft(statusDot, 'ステータス');
 
       const notifyImg = t.closest('img.accept-notify');
-      if (notifyImg) return showTipUnder(notifyImg, '通知ON｜OFF');
+      // ★左側で見切れない：アイコン左端から文字開始
+      if (notifyImg) return showTipUnderLeft(notifyImg, '通知ON｜OFF');
 
       const chatBtn = t.closest('a.open-popup-chat.btn-chat');
       if (chatBtn) return showTipUnder(chatBtn, 'チャット');
