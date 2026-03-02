@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         校正画面｜ヘッダー※screen-header.user.js
+// @name         済｜校正画面｜ヘッダー※done-screen-header.user.js
 // @namespace    akapon
 // @version      20260227_0001
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-header.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-header.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-header.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-header.user.js
 // ==/UserScript==
 
 (function () {
@@ -329,6 +330,95 @@ html body #navbar-common #plan-header-toggle-btn img{
   position: relative !important;
   top: -1px !important;
 }
+
+/* =========================================================
+   ❶ 「最近更新したファイル」最強上書き
+   ========================================================= */
+
+html body #navbar-common .drop-down-akaire-file .recently-files{
+  display: block !important;
+  width: 100% !important;
+  font-size: 1.0em !important;
+  font-weight: 700 !important;
+
+  /* 親がtext-centerでも強制左寄せ */
+  text-align: left !important;
+  justify-content: flex-start !important;
+  margin: 13px 0 0px 0 !important;
+}
+
+/* 文字を【】付きにする */
+html body #navbar-common .drop-down-akaire-file .recently-files::before{
+  content: "【" !important;
+}
+html body #navbar-common .drop-down-akaire-file .recently-files::after{
+  content: "】" !important;
+}
+
+/* =========================================================
+   ❷ ファイルdropdownの見た目強化
+   ========================================================= */
+
+html body #navbar-common .dropdown-menu.drop-down-akaire-file{
+  box-shadow: 0 10px 24px rgba(0,0,0,0.45) !important;
+  border-radius: 12px !important;
+  border: none !important;
+}
+
+/* =========================================================
+   ❹ アイコンサイズ最強上書き
+   ========================================================= */
+
+/* 画像アップロード */
+html body #navbar-common .drop-down-akaire-file img[src*="upload_image"]{
+  width: 30px !important;
+  height: 20px !important;
+}
+
+/* YouTube */
+html body #navbar-common .drop-down-akaire-file img[src*="upload_youtube"]{
+  width: 30px !important;
+  height: 22px !important;
+}
+
+/* 動画アイコン差し替え */
+html body #navbar-common .drop-down-akaire-file img[src*="video_akaire"]{
+  content: url("/packs/media/images/upload_video-07d617bd.png") !important;
+  width: 30px !important;
+  height: 28px !important;
+}
+
+/* =========================================================
+   ❺ サムネイルサイズ最強固定
+   ========================================================= */
+
+html body #navbar-common .case-file .description-file .img-file img.description_icon{
+  width: 80px !important;
+  height: 50px !important;
+}
+
+/* WWWアイコン */
+html body #navbar-common .drop-down-akaire-file img[src*="icon-www"]{
+  width: 30px !important;
+  height: 21px !important;
+}
+
+/* =========================================================
+   ❹ description-info-file の文字サイズ・行間調整
+   ========================================================= */
+
+html body #navbar-common .drop-down-akaire-file .description-info-file{
+  font-size: 1.0em !important;
+  line-height: 2.7 !important;
+}
+
+/* 「行間を狭くする」→ 実際に詰まって見えるのは中の行なので、子要素側で詰める */
+html body #navbar-common .drop-down-akaire-file .description-info-file .detail-file,
+html body #navbar-common .drop-down-akaire-file .description-info-file .detail-info{
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 `;
   }
 
@@ -384,6 +474,31 @@ html body #navbar-common #plan-header-toggle-btn img{
     talk.dataset.tmTalkIconApplied = '1';
   }
 
+// =========================================================
+// ❸ ボタン文言変更
+// =========================================================
+function syncChangeFileListText(){
+  const a = document.querySelector('#navbar-common .drop-down-akaire-file .border-btn-create-new-file');
+  if (!a) return;
+
+  const span =
+    a.querySelector('span.mx-3.my-1') ||
+    a.querySelector('span');
+
+  if (!span) return;
+
+  const text = (span.textContent || '').replace(/\s+/g, '');
+
+  // 文言変更
+  if (text.indexOf('赤入れ') !== -1 || text.indexOf('ファイル一覧に移動') !== -1){
+    span.textContent = 'ファイル一覧へ';
+  }
+
+  // ✅ margin-top:5px を必ず追加（既にあっても上書き）
+  a.style.marginTop = '5px';
+
+  a.dataset.tmRenamed = '1';
+}
   // =========================================================
   // ❷ 総容量を2行にする（中央寄せ）
   // - 「総容量： 152.49MB」→「総容量<br>152.49MB」
@@ -521,15 +636,58 @@ function syncTempFolderText() {
     syncTotalSizeTwoLines();
     syncHeaderSeparators();
     syncTempFolderText();
+    syncChangeFileListText();
   }
-  // DOMがまだ無いタイミングがあるので、短時間だけポーリングして当てる
-document.addEventListener('DOMContentLoaded', () => {
 
-  // 0.2秒だけ待って1回実行
-  setTimeout(() => {
-    if (!isProofreadingHeaderPage()) return;
-    tickInit();
-  }, 200);
+  // =========================================================
+  // 起動強化：
+  // - DOM生成が遅い環境でも確実に当てる（短時間リトライ）
+  // - 「ファイル」クリックでdropdownがDOM追加されても当て直す
+  // =========================================================
+  function startProofHeaderFix() {
+    // 既に起動済みなら二重起動しない
+    if (document.body && document.body.dataset.tmProofHeaderBoot === '1') return;
+    if (document.body) document.body.dataset.tmProofHeaderBoot = '1';
 
-});
+    let tries = 0;
+    const maxTries = 30; // 30 * 150ms = 4.5秒だけ粘る
+
+    const timer = setInterval(() => {
+      tries++;
+
+      // 校正画面判定が true になったら tick を当てる
+      if (isProofreadingHeaderPage()) {
+        tickInit();
+      }
+
+      // 一定回数で停止（常駐しない）
+      if (tries >= maxTries) {
+        clearInterval(timer);
+      }
+    }, 150);
+
+    // navbar のDOM変化でも tick を当て直す（dropdown表示など）
+    const nav = document.getElementById('navbar-common');
+    if (!nav) return;
+
+    if (nav.dataset.tmProofHeaderObs === '1') return;
+    nav.dataset.tmProofHeaderObs = '1';
+
+    const obs = new MutationObserver(() => {
+      if (!isProofreadingHeaderPage()) return;
+      tickInit();
+    });
+
+    obs.observe(nav, { childList: true, subtree: true });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    startProofHeaderFix();
+  });
+
+  // Turbo系（もし使っていても安全）
+  document.addEventListener('turbo:load', () => {
+    startProofHeaderFix();
+  });
+
 })();
