@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         済｜校正画面｜動画の公開URL modal ※Done-screen-movie-url-modal.user.js
+// @name         済｜校正画面｜動画の公開URL modal ※done-screen-movie-url-modal.user.js
 // @namespace    akapon
 // @version      0.0.2
 // @description  movie share url modal customize (body only)
