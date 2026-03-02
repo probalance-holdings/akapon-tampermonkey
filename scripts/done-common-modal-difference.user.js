@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         済｜共通｜モーダル｜見た目差分の確認用※done-common-modal-difference.user.js
 // @namespace    akapon
-// @version      20260302 2300
+// @version      20260302 2400
 // @description  モーダルタイトル行の“見た目差分”を一時的にそろえるための確認用スクリプト
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
@@ -104,17 +104,197 @@ injectCssOnce(
   ].join('\n')
 );
 
-  // ----------------------------------------
-  // 共通：style タグを 1回だけ追加するヘルパー
-  // ----------------------------------------
-  function injectCssOnce(id, cssText) {
-    if (document.getElementById(id)) return;
+function injectCssOnce(id, cssText) {
+    var target = document.head || document.documentElement;
+
+    var existing = document.getElementById(id);
+    if (existing) {
+      // 既存があれば内容更新
+      existing.textContent = cssText;
+
+      // ★末尾へ移動して「後勝ち」を保証
+      if (existing.parentNode) existing.parentNode.removeChild(existing);
+      target.appendChild(existing);
+      return;
+    }
+
     var style = document.createElement('style');
     style.id = id;
     style.type = 'text/css';
     style.appendChild(document.createTextNode(cssText));
-    document.head.appendChild(style);
+    target.appendChild(style);
   }
+
+// ========================================================
+// 【ページ名】現在のプラン（changePlan / 年額 / 月額 / 解約 / etc）
+// 【目的】
+// ❶ .modal-body-content.centered-content の border/shadow/radius を “このID群だけ” 強制で無効化
+// ❷ 820×1180（iPad縦想定）で width:780px ＋ 中央寄せ
+// ❸ 下記2枠に shadow を付与
+//    - .plan-info（内側に .plan-info-title がいる枠）
+//    - .team-name-input（チーム名入力＋更新ボタンの枠）
+// ========================================================
+injectCssOnce(
+  'tm-modal-diff-current-plan-centered-content',
+  [
+    '/* 現在のプラン系モーダル：.centered-content の枠/影/角丸を無効化（このID群だけ） */',
+    'html body #changePlanModal .modal-body-content.centered-content,',
+    'html body #annualPaymentModal .modal-body-content.centered-content,',
+    'html body #monthlyPaymentModal .modal-body-content.centered-content,',
+    'html body #cancelSubscriptionModal .modal-body-content.centered-content,',
+    'html body #showCompanyMemberModal .modal-body-content.centered-content,',
+    'html body #handleConfirmPaymentMethodModal .modal-body-content.centered-content,',
+    'html body #announcementSettingsModal .modal-body-content.centered-content,',
+    'html body #introduceReportModal .modal-body-content.centered-content,',
+    'html body #announcementSettingsConfirmModal .modal-body-content.centered-content,',
+    'html body #billingInformationSettingsConfirmModal .modal-body-content.centered-content{',
+    '  border: none !important;',
+    '  box-shadow: none !important;',
+    '  border-radius: 0 !important;',
+    '}',
+
+    '',
+    '/* 820×1180想定：横幅780px＋中央寄せ（はみ出し防止） */',
+    '@media (max-width: 820px) and (min-width: 768px){',
+    '  html body #changePlanModal .modal-body-content.centered-content,',
+    '  html body #annualPaymentModal .modal-body-content.centered-content,',
+    '  html body #monthlyPaymentModal .modal-body-content.centered-content,',
+    '  html body #cancelSubscriptionModal .modal-body-content.centered-content,',
+    '  html body #showCompanyMemberModal .modal-body-content.centered-content,',
+    '  html body #handleConfirmPaymentMethodModal .modal-body-content.centered-content,',
+    '  html body #announcementSettingsModal .modal-body-content.centered-content,',
+    '  html body #introduceReportModal .modal-body-content.centered-content,',
+    '  html body #announcementSettingsConfirmModal .modal-body-content.centered-content,',
+    '  html body #billingInformationSettingsConfirmModal .modal-body-content.centered-content{',
+    '    width: 780px !important;',
+    '    max-width: calc(100% - 40px) !important;',
+    '    margin-left: auto !important;',
+    '    margin-right: auto !important;',
+    '    box-sizing: border-box !important;',
+    '  }',
+    '}',
+
+    '',
+    '/* ❷ shadow：plan-info（枠全体） ※検証で効いた指定に合わせる */',
+    'html body #changePlanModal .plan-info,',
+    'html body #annualPaymentModal .plan-info,',
+    'html body #monthlyPaymentModal .plan-info,',
+    'html body #cancelSubscriptionModal .plan-info,',
+    'html body #showCompanyMemberModal .plan-info,',
+    'html body #handleConfirmPaymentMethodModal .plan-info,',
+    'html body #announcementSettingsModal .plan-info,',
+    'html body #introduceReportModal .plan-info,',
+    'html body #announcementSettingsConfirmModal .plan-info,',
+    'html body #billingInformationSettingsConfirmModal .plan-info{',
+    '  box-shadow: 0 10px 28px rgba(0, 0, 0, .28) !important;',
+    '}',
+
+    '',
+    '/* ❷ shadow：team-name-input は「枠(div)」ではなく input(.form-control) に影を付ける（検証で効いた形） */',
+    'html body #changePlanModal .team-name-input .form-control,',
+    'html body #annualPaymentModal .team-name-input .form-control,',
+    'html body #monthlyPaymentModal .team-name-input .form-control,',
+    'html body #cancelSubscriptionModal .team-name-input .form-control,',
+    'html body #showCompanyMemberModal .team-name-input .form-control,',
+    'html body #handleConfirmPaymentMethodModal .team-name-input .form-control,',
+    'html body #announcementSettingsModal .team-name-input .form-control,',
+    'html body #introduceReportModal .team-name-input .form-control,',
+    'html body #announcementSettingsConfirmModal .team-name-input .form-control,',
+    'html body #billingInformationSettingsConfirmModal .team-name-input .form-control{',
+    '  box-shadow: 0 10px 28px rgba(0, 0, 0, .28) !important;',
+    '}',
+    ''
+  ].join('\\n')
+);
+
+/* CSSがどうしても負ける場合の最終手段：このID群だけ inline で潰す（1回だけ） */
+function enforceCurrentPlanCenteredContentOnce() {
+  var ids = [
+    'changePlanModal',
+    'annualPaymentModal',
+    'monthlyPaymentModal',
+    'cancelSubscriptionModal',
+    'showCompanyMemberModal',
+    'handleConfirmPaymentMethodModal',
+    'announcementSettingsModal',
+    'introduceReportModal',
+    'announcementSettingsConfirmModal',
+    'billingInformationSettingsConfirmModal'
+  ];
+
+  ids.forEach(function(id){
+    var root = document.getElementById(id);
+    if (!root) return;
+
+    var cc = root.querySelector('.modal-body-content.centered-content');
+    if (!cc) return;
+
+    if (cc.dataset.tmCenteredContentFixed === '1') return;
+
+    cc.style.border = 'none';
+    cc.style.boxShadow = 'none';
+    cc.style.borderRadius = '0';
+    cc.dataset.tmCenteredContentFixed = '1';
+  });
+}
+
+/* ✅ 追加：plan-info / team-name-input に “強制で” シャドーを入れる（CSS勝ち負け無関係） */
+function enforceCurrentPlanShadowOnce() {
+  var ids = [
+    'changePlanModal',
+    'annualPaymentModal',
+    'monthlyPaymentModal',
+    'cancelSubscriptionModal',
+    'showCompanyMemberModal',
+    'handleConfirmPaymentMethodModal',
+    'announcementSettingsModal',
+    'introduceReportModal',
+    'announcementSettingsConfirmModal',
+    'billingInformationSettingsConfirmModal'
+  ];
+
+  ids.forEach(function(id){
+    var root = document.getElementById(id);
+    if (!root) return;
+
+    // ① plan-info（枠）
+    var planInfo = root.querySelector('.plan-info');
+    if (planInfo && planInfo.dataset.tmShadowFixed !== '1') {
+      planInfo.style.border = 'none';  // ✅ border: 1px solid black; を確実に無効化
+      planInfo.style.boxShadow = '0 10px 28px rgba(0, 0, 0, .28)';
+      planInfo.dataset.tmShadowFixed = '1';
+    }
+
+    // ② team-name-input は “枠(div)” じゃなく “input(.form-control)” に影（あなたの検証通り）
+    var teamInput = root.querySelector('.team-name-input .form-control');
+    if (teamInput && teamInput.dataset.tmShadowFixed !== '1') {
+      teamInput.style.border = 'none';        // ✅ 線（枠線）を消す
+      teamInput.style.outline = 'none';       // ✅ フォーカス輪郭も消す（残る場合がある）
+      teamInput.style.boxShadow = '0 10px 28px rgba(0, 0, 0, .28)';
+      teamInput.dataset.tmShadowFixed = '1';
+    }
+  });
+}
+
+function runCurrentPlanFixes() {
+  enforceCurrentPlanCenteredContentOnce();
+  enforceCurrentPlanShadowOnce();
+}
+
+runCurrentPlanFixes();
+
+/* モーダルはクリック後にDOMが差し替わるので、クリック後にもう一回当てる */
+document.addEventListener('click', function(){
+  setTimeout(runCurrentPlanFixes, 0);
+});
+
+/* さらに：モーダルDOMが後から挿入されても確実に当てる */
+try {
+  var mo = new MutationObserver(function(){
+    runCurrentPlanFixes();
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+} catch(e) {}
 
 
 // ========================================================
