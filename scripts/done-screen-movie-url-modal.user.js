@@ -6,8 +6,8 @@
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-movie-url-modal.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-movie-url-modal.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-movie-url-modal.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-movie-url-modal.user.js
 // @run-at       document-start
 // ==/UserScript==
 
