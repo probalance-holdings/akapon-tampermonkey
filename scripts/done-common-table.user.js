@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name         共通｜プロジェクト/タスク/ファイルtable）※common-table.user.js
+// @name         済｜共通｜プロジェクト/タスク/ファイルtable）※done-common-table.user.js
 // @namespace    akapon
 // @version      20250227 2400
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-table.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-table.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-table.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-table.user.js
 // ==/UserScript==
 
 (() => {
