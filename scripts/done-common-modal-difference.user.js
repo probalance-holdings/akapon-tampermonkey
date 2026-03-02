@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name         共通｜モーダル｜見た目差分の確認用※common-modal-difference.user.js
+// @name         済｜共通｜モーダル｜見た目差分の確認用※done-common-modal-difference.user.js
 // @namespace    akapon
 // @version      20260226_1000
 // @description  モーダルタイトル行の“見た目差分”を一時的にそろえるための確認用スクリプト
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-end
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-modal-difference.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-modal-difference.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-modal-difference.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-common-modal-difference.user.js
 // ==/UserScript==
 
 /*
