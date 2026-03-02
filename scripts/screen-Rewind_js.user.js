@@ -3,8 +3,11 @@
 // @namespace    akapon
 // @version      20260227 1800
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-Rewind_js.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-Rewind_js.user.js
 // ==/UserScript==
 
 (() => {
