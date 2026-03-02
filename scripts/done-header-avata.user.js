@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         ヘッダー｜右上アバター※header-avata.user.js
+// @name         済｜ヘッダー｜右上アバター※done-header-avata.user.js
 // @namespace    akapon
 // @version      20260227 1600
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-avata.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-avata.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-header-avata.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-header-avata.user.js
 // ==/UserScript==
 
 (() => {
