@@ -1,18 +1,47 @@
 // ==UserScript==
-// @name         17｜アカポン（赤入れ共有URL　modal）※akapon-akaire-url-modal_css.user.js
+// @name         済｜校正画面｜赤入れ共有URL※done-screen-akaire-url-modal.user.js
 // @namespace    akapon
 // @version      0.0.2
 // @description  share url modal customize (CSS/JS only)
 // @author       akapon
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-akaire-url-modal_css.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-akaire-url-modal_css.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-akaire-url-modal.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-akaire-url-modal.user.js
 // @run-at       document-start
 // ==/UserScript==
 
 (function () {
   'use strict';
+
+// =========================================================
+// 【エンジニア向け重要メモ】赤入れ共有URLモーダル統一について
+//
+// 現在、赤入れ共有URLモーダルは以下の2系統が存在しています：
+//
+// ① .tm-share-url-modal（akaire_file 系）
+// ② .tm-movie-url-modal（akaire_feature / movie 系）
+//
+// 本スクリプトのCSSは .tm-share-url-modal 前提で設計されています。
+// そのため、.tm-movie-url-modal 側には同一CSSが適用されません。
+//
+// 見た目を完全統一するには：
+//
+// 【推奨】
+// ・バックエンド側で modal-content のクラスを統一する
+//    → 両方とも .tm-share-url-modal に統一する
+//
+// または
+//
+// ・DOM構造を共通テンプレート化する
+//
+// JS側で無理に class を付与すると、
+// ページ依存構造や将来的な改修時に破綻する可能性があります。
+//
+// 現在のスクリプトは「file系モーダルのみ正式対応」設計です。
+// movie系を完全統一する場合は、フロント設計の統一が必要です。
+// =========================================================
 
   // =========================================================
   // 対象URL
@@ -45,27 +74,58 @@ function buildCssText() {
   color: #000 !important;
 }
 
-/* ヘッダー（ネイビー帯：検索ボタンとトーン統一） */
-.modal.show .modal-content.text-center.tm-share-url-modal .modal-header,
-.modal.show .modal-content.text-center.tm-share-url-modal > .modal-header{
+/* ヘッダー（ネイビー帯：検索ボタンとトーン統一）
+   ※ 元のタイトル行 .tm-file-original-header-hidden には適用しない */
+.modal.show .modal-content.text-center.tm-share-url-modal .modal-header:not(.tm-file-original-header-hidden),
+.modal.show .modal-content.text-center.tm-share-url-modal > .modal-header:not(.tm-file-original-header-hidden){
   display: block !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 10px 14px !important;
   font-weight: 900 !important;
   color: #fff !important;
-
-  /* 検索ボタンと同系統：右側は暗めグレーで止める */
   background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
-
   border-radius: 12px 12px 0 0 !important;
+  position: relative !important;
 }
 
-/* 既存DOMが h5.modal-title の場合も左右いっぱい */
-.modal.show .modal-content.text-center.tm-share-url-modal h5.modal-title{
-  display: block !important;
-  width: 100% !important;
-  margin: 0 !important;
+/* ▼ 赤入れ共有URL modal の戻るボタン（メンバー招待と同じ形） */
+.modal.show .modal-content.text-center.tm-share-url-modal
+  .tm-file-modal-header a.text-underline.text-black.back-text-link,
+.modal.show .modal-content.text-center.tm-share-url-modal
+  .tm-file-modal-header a.tm-file-header-back-btn{
+  position: absolute !important;
+  right: 12px !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 6px 12px !important;
+  background: #fff !important;
+  color: #000 !important;
+  border: 1px solid #fff !important;
+  text-decoration: none !important;
+  border-radius: 10px !important;
+
+  z-index: 100000 !important;
+  pointer-events: auto !important;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  font-size: 0.7em !important;
+  font-weight: 700 !important;
+}
+
+.modal.show .modal-content.text-center.tm-share-url-modal
+  .tm-file-modal-header a.text-underline.text-black.back-text-link:hover,
+.modal.show .modal-content.text-center.tm-share-url-modal
+  .tm-file-modal-header a.tm-file-header-back-btn:hover{
+  opacity: 0.85 !important;
+  background: #f2f2f2 !important;
+  color: #000 !important;
 }
 
 /* body */
@@ -75,7 +135,6 @@ function buildCssText() {
   background: #fff !important;
   color: #000 !important;
 }
-
 /* 説明文（左寄せ） */
 .modal.show .modal-content.text-center.tm-share-url-modal .text-left{
   text-align: left !important;
@@ -575,6 +634,10 @@ function applyShareUrlAdjustments() {
 
   const isSp = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
 
+  // タイトル行（ヘッダー）は「モーダル｜タイトル行ヘッダー共通・司令塔」側で
+  // 一括制御するため、このスクリプトでは .modal-header を書き換えない。
+  // （赤入れ共有URL の <div class="modal-header">赤入れ共有URL</div> はここでは触らない）
+
   // パスワードON/OFFで残る「持ち上げ」系があれば消す（全サイズ共通）
   const targets = modalContent.querySelectorAll(
     '.mt-2.show-text-of-modal-share-akaire-file .show-all-input-pass-share .show-change-pass-share-akaire'
@@ -614,26 +677,66 @@ function applyShareUrlAdjustments() {
     closeWrap.style.setProperty('margin-top', '10px', 'important');
   }
 
-  if (closeBtn && closeBtn.dataset.tmCloseBound !== '1') {
-    closeBtn.dataset.tmCloseBound = '1';
+  // ★ 既存の data-tm-close-bound="1" が付いていても、別フラグで“必ず”保険を付ける
+  if (closeBtn && closeBtn.dataset.tmCloseBoundForce !== '1') {
+    closeBtn.dataset.tmCloseBoundForce = '1';
+
+    const forceClearModalOverlay = () => {
+      try { document.querySelectorAll('.modal-backdrop').forEach((bd) => bd.remove()); } catch (_) {}
+      try {
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+      } catch (_) {}
+    };
+
+    const hideModalCompat = (modalEl) => {
+      if (!modalEl) return;
+
+      // Bootstrap 5
+      if (window.bootstrap && window.bootstrap.Modal) {
+        try {
+          const inst = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+          inst.hide();
+          return;
+        } catch (_) {}
+      }
+
+      // Bootstrap 4 / jQuery
+      if (typeof window.$ === 'function') {
+        try { window.$(modalEl).modal('hide'); return; } catch (_) {}
+      }
+
+      // fallback
+      modalEl.classList.remove('show');
+      modalEl.style.display = 'none';
+      modalEl.setAttribute('aria-hidden', 'true');
+    };
 
     closeBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+
+      // まず overlay 掃除（戻る後の残留対策）
+      forceClearModalOverlay();
+
+      // 1) インラインonclickが動けばそれを優先（例外は握りつぶしてフォールバック）
       try {
         if (typeof closeBtn.onclick === 'function') {
           closeBtn.onclick.call(closeBtn, e);
+          // onclick後も残留する場合があるので2回掃除
+          forceClearModalOverlay();
+          setTimeout(forceClearModalOverlay, 0);
           return;
         }
       } catch (_) {}
 
+      // 2) フォールバックで確実に閉じる
       const modalEl = closeBtn.closest('.modal');
-      if (modalEl && typeof window.$ === 'function') {
-        try { window.$(modalEl).modal('hide'); return; } catch (_) {}
-      }
-
-      if (modalEl) {
-        modalEl.classList.remove('show');
-        modalEl.style.display = 'none';
-      }
+      hideModalCompat(modalEl);
+      forceClearModalOverlay();
+      setTimeout(forceClearModalOverlay, 0);
     }, true); // capture
   }
 }
@@ -793,67 +896,6 @@ style.textContent = `
     font-size: 14px !important;
   }
 }
-
-/* =========================================================
-   TM: new_alert_popup を “中央モーダル” に強制（最強）
-   - 既存の bottom固定（SP用）に勝つ
-   - まずはこれで「変わらない」を潰す
-   ========================================================= */
-body .swal2-container.swal2-center .swal2-popup.new_alert_popup{
-  position: fixed !important;                 /* ← ここは fixed で確定 */
-  left: 50% !important;
-  top: 50% !important;
-  right: auto !important;
-  bottom: auto !important;
-  transform: translate(-50%, -50%) !important;
-
-  width: min(560px, calc(100vw - 40px)) !important;
-  max-width: min(560px, calc(100vw - 40px)) !important;
-
-  height: auto !important;                    /* 12vh固定はやめる（文言で崩れる） */
-  min-height: 120px !important;               /* “それっぽい高さ”だけ担保 */
-  padding: 0 !important;
-
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  background: #fff !important;
-  box-shadow: 0 10px 28px rgba(0,0,0,.28) !important;
-
-  z-index: 2147483647 !important;
-}
-
-/* ヘッダー風（titleが出ているタイプ用） */
-body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-title{
-  display: block !important;
-  margin: 0 !important;
-  padding: 12px 14px !important;
-  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
-  color: #fff !important;
-  font-weight: 900 !important;
-  text-align: left !important;
-  line-height: 1.35 !important;
-}
-
-/* 本文（html-container が出るタイプ用） */
-body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-html-container{
-  display: block !important;
-  margin: 0 !important;
-  padding: 16px 14px !important;
-  color: #000 !important;
-  text-align: center !important;
-}
-
-/* OKボタン（出るタイプだけ） */
-body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions{
-  margin: 0 !important;
-  padding: 0 0 16px !important;
-}
-body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-confirm{
-  min-height: 36px !important;
-  border-radius: 10px !important;
-  box-shadow: 0 8px 18px rgba(0,0,0,.28) !important;
-}
-
 `.trim();
 
     (document.head || document.documentElement).appendChild(style);
