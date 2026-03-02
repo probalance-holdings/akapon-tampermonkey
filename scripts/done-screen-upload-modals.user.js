@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         済｜校正画面｜アップロード周りモーダル調整｜保存3秒｜YouTube広告｜バージョン更新※done-screen-upload-modals.user.js
 // @namespace    akapon
-// @version      1.0
+// @version      20260302 2300
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
@@ -34,7 +34,7 @@
    ========================= */
 #modal-show-warning-upload-video-youtube-ads .modal-dialog .modal-content{
   max-width: 765px !important;
-  border-radius: 8px !important;
+  border-radius: 18px !important;
   box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
 }
 
@@ -615,6 +615,86 @@
   }
 
   /* =========================================================
+     6) YouTube広告モーダルの「戻る」リンクだけ削除
+     ========================================================= */
+  function bindRemoveBackLinkYoutubeAdsOnce() {
+    if (window.__akaponYoutubeAdsBackLinkRemovedBound) return;
+    window.__akaponYoutubeAdsBackLinkRemovedBound = true;
+
+    const MODAL_ID = '#modal-show-warning-upload-video-youtube-ads';
+
+    const removeBackLink = () => {
+      const modal = document.querySelector(MODAL_ID);
+      if (!modal) return;
+
+      // tm-file-modal-header 内の「戻る」だけを削除（誤爆防止で class/attr を条件にする）
+      const backLink = modal.querySelector(
+        '.tm-file-modal-header a.tm-file-header-back-btn[data-tm-file-header-back="1"]'
+      );
+      if (backLink) backLink.remove();
+    };
+
+    // 初回（既にDOMにある場合）
+    removeBackLink();
+
+    // modal生成/再描画にも追従
+    const mo = new MutationObserver(() => removeBackLink());
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /* =========================================================
+     6) YouTube広告モーダルの「戻る」リンクだけ削除
+     ========================================================= */
+  function bindRemoveBackLinkYoutubeAdsOnce() {
+    if (window.__akaponYoutubeAdsBackLinkRemovedBound) return;
+    window.__akaponYoutubeAdsBackLinkRemovedBound = true;
+
+    const MODAL_ID = '#modal-show-warning-upload-video-youtube-ads';
+
+    const removeBackLink = () => {
+      const modal = document.querySelector(MODAL_ID);
+      if (!modal) return;
+
+      const backLink = modal.querySelector(
+        '.tm-file-modal-header a.tm-file-header-back-btn[data-tm-file-header-back="1"]'
+      );
+      if (backLink) backLink.remove();
+    };
+
+    removeBackLink();
+
+    const mo = new MutationObserver(() => removeBackLink());
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /* =========================================================
+     7) YouTube広告モーダル：タイトル末尾の「X」だけ除去
+     ========================================================= */
+  function bindRemoveTrailingXInYoutubeAdsTitleOnce() {
+    if (window.__akaponYoutubeAdsTitleXRemovedBound) return;
+    window.__akaponYoutubeAdsTitleXRemovedBound = true;
+
+    const MODAL_ID = '#modal-show-warning-upload-video-youtube-ads';
+
+    const normalizeTitle = () => {
+      const modal = document.querySelector(MODAL_ID);
+      if (!modal) return;
+
+      const titleEl = modal.querySelector('.tm-file-modal-header .tm-file-header-title-text');
+      if (!titleEl) return;
+
+      const t = (titleEl.textContent || '').trim();
+      const cleaned = t.replace(/\s+X\s*$/,'').trim();
+      if (cleaned !== t) titleEl.textContent = cleaned;
+    };
+
+    normalizeTitle();
+
+    const mo = new MutationObserver(() => normalizeTitle());
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /* =========================================================
      init
      ========================================================= */
   injectCssOnce();
@@ -622,6 +702,8 @@
   bindShortenOnce();
   bindAutoCloseSaveModalOnce();
   defineOpenPopupShareUrlIfMissing();
+  bindRemoveBackLinkYoutubeAdsOnce();
+  bindRemoveTrailingXInYoutubeAdsTitleOnce();
 
   // SPA対策：URL変化でCSSだけ再注入（軽量）
   let lastHref = location.href;
