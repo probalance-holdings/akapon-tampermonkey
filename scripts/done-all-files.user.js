@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         全ファイルページ｜※all-files.user.js
+// @name         済｜全ファイルページ｜※done-all-files.user.js
 // @namespace    akapon
 // @version      20260302-1002
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-start
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/all-files.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/all-files.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-all-files.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-all-files.user.js
 // ==/UserScript==
 
 (function() {
