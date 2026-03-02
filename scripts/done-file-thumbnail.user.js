@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name         ファイル｜サムネイル※file-thumbnail.user.js
+// @name         ファイル｜サムネイル※done-file-thumbnail.user.js
 // @namespace    akapon
 // @version      20260302 2300
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-start
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/file-thumbnail.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/file-thumbnail.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-file-thumbnail.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-file-thumbnail.user.js
 // ==/UserScript==
 
 (() => {
