@@ -12,6 +12,37 @@
 (function() {
   'use strict';
 
+// =====================================================
+// 【エンジニア確認依頼】/all_akaire_files（SP）ステータス選択モーダル
+// =====================================================
+//
+// 現象：
+//  - SPで「ステータス選択モーダル」の横幅/サイズが、タイトル文字数（ファイル名の長さ）に引っ張られて変動します。
+//  - こちら（Tampermonkey）側で
+//     ① ステータスモーダルにだけ識別クラス付与
+//     ② .modal-dialog / .modal-content を SP限定で固定幅にする
+//     ③ タイトルを ellipsis（…）で1行省略
+//    を入れても、表示が変わらない/上書きされる状態です。
+//
+// 推定原因：
+//  - モーダル表示後にシステム側JS/CSSが再適用され、width/max-width/min-width が上書きされている
+//  - もしくはモーダルの構造が「SP専用の別DOM（別テンプレ）」で、こちらのセレクタが通っていない
+//  - あるいは親要素（.modal-dialog 等）に inline style が付与され、CSSで勝てない
+//
+// 依頼：
+//  - SPの「ステータス選択モーダル」について、システム側でサイズ固定を実装してください。
+//    要件：文字数に依存せず常に同じ幅（例：max-width 560px / 96vw）で表示。
+//    例：
+//      .modal-dialog { width: min(96vw, 560px); max-width: min(96vw, 560px); }
+//      タイトルは overflow: hidden; text-overflow: ellipsis; white-space: nowrap; を付与。
+//  - 併せて、SPの「ステータス選択モーダル」でも共通のヘッダー（tm-file-modal-header）を使えるよう、
+//    テンプレート統一（ファイル情報モーダルと同じヘッダー構造）を検討してください。
+//
+// 再現：
+//  - /all_akaire_files をSP表示 → ステータス（●またはステータス文字）をタップ → モーダル表示
+//  - ファイル名が短い/長いで、モーダル横幅が変わる
+// =====================================================
+
   function injectCssGuaranteed(id, cssText) {
     // 既にあれば更新＆末尾へ（後勝ち）
     const existing = document.getElementById(id);
@@ -156,20 +187,118 @@
       font-weight: 800 !important;
     }
 
-    /* =========================================
-       ❷（置換）モーダル表示時：クリックした行を「薄い赤ザブトン」で強調
-       - 線の強調はしない
-       ========================================= */
-    html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfiles-active-row > td{
-      background: rgba(255, 77, 77, 0.10) !important;
-      box-shadow: none !important;
-    }
-    html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfiles-active-row{
-      outline: none !important;
-    }
+/* =========================================
+   モーダル表示時：クリックした行を強調
+   - 背景（薄赤）は維持
+   - 赤線（アウトライン）を復活
+   ========================================= */
+html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfiles-active-row > td{
+  background: rgba(255, 77, 77, 0.10) !important;
+  box-shadow: none !important;
+}
+html body table.table.table-project.table-project-newstyle tbody > tr.tm-allfiles-active-row{
+  outline: 2px solid rgba(255, 0, 0, 0.55) !important;
+  outline-offset: -2px !important;
+}
 
     html body table.table.table-project.table-project-newstyle > thead * {
       font-size: inherit !important;
+    }
+
+/* =========================================
+   SP：ファイル名列の余計な横線を消す（対象を絞る）
+   - 1列目「全要素 *」は触らない（ステータス丸の見た目が崩れるため）
+   - 横線の原因になっているセル構造だけを無効化
+   ========================================= */
+@media (max-width: 768px){
+  html body table.table.table-project.table-project-newstyle
+  tbody tr > td:nth-child(1).d-flex.justify-content-between.w-100,
+  html body table.table.table-project.table-project-newstyle
+  tbody tr > td:nth-child(1).d-flex.justify-content-between.w-100 .w-100--4px{
+    box-shadow: none !important;
+    background-image: none !important;
+  }
+}
+
+    /* =========================================
+       SP：モーダルタイトルの文字が大きすぎるのを調整
+       ========================================= */
+    @media (max-width: 768px){
+      html body .tm-file-modal-header .tm-file-header-title-text{
+        font-size: 14px !important;
+        line-height: 1.25 !important;
+      }
+    }
+
+    /* =========================================
+       SP：全ファイル（/all_akaire_files）
+       ファイル名列（1列目）だけに出る「内側の横線」を消す
+       ※ <td class="d-flex ... w-100"> 配下の border/影/背景線が原因
+       ========================================= */
+    @media (max-width: 768px){
+      html body table.table.table-project.table-project-newstyle tbody tr > td:nth-child(1).d-flex.justify-content-between.w-100,
+      html body table.table.table-project.table-project-newstyle tbody tr > td:nth-child(1).d-flex.justify-content-between.w-100 .w-100--4px{
+        border-bottom: none !important;
+        box-shadow: none !important;
+        background-image: none !important;
+      }
+
+      html body table.table.table-project.table-project-newstyle tbody tr > td:nth-child(1).d-flex.justify-content-between.w-100::before,
+      html body table.table.table-project.table-project-newstyle tbody tr > td:nth-child(1).d-flex.justify-content-between.w-100::after{
+        content: none !important;
+        display: none !important;
+      }
+    }
+
+    /* =========================================
+       SP：全ファイル（/all_akaire_files）
+       ❶ thead（bg-primary）の文字サイズを 1.0em に固定（最強CSS）
+       ※ ここが該当箇所です：thead tr.bg-primary > th
+       ========================================= */
+    @media (max-width: 768px){
+      html body table.table.table-project.table-project-newstyle thead tr.bg-primary > th.text-center.text-light{
+        font-size: 1.0em !important;
+        line-height: 1.2 !important;
+      }
+    }
+
+    /* =========================================
+       SP：全ファイル（/all_akaire_files）
+       ❷ ファイル名リンクだけ少し下げる（行全体は動かさない）
+       ========================================= */
+    @media (max-width: 768px){
+      html body table.table.table-project.table-project-newstyle tbody tr > td:nth-child(1) a.text-underline.truncate-text{
+        position: relative !important;
+        top: 2px !important; /* ← 少し下げる */
+      }
+    }
+
+    /* =========================================
+       SP：全ファイル「ステータス選択モーダル」だけ
+       - 文字数に引っ張られずサイズ固定
+       - タイトルは1行省略（…）で幅を崩さない
+       ========================================= */
+    @media (max-width: 768px){
+      html body .modal.tm-allfiles-status-modal .modal-dialog{
+        width: min(96vw, 560px) !important;
+        max-width: min(96vw, 560px) !important;
+        min-width: min(96vw, 560px) !important;
+        margin: 12px auto !important;
+      }
+      html body .modal.tm-allfiles-status-modal .modal-content{
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      html body .modal.tm-allfiles-status-modal .tm-file-modal-header .tm-file-header-title{
+        min-width: 0 !important; /* ellipsisに必須 */
+      }
+      html body .modal.tm-allfiles-status-modal .tm-file-modal-header .tm-file-header-title-text{
+        display: block !important;
+        max-width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
     }
   `;
 
@@ -310,11 +439,8 @@
       const t = e.target;
       if (!t || typeof t.closest !== 'function') return;
 
-      // ●（open-select-status-modal） or ステータス文字（status-text）クリックを拾う
       const btn = t.closest('span.open-select-status-modal');
       const isText = t.closest('span.status-text');
-
-      // 文字クリックの場合は同じ行の btn を探す
       const trigger = btn || (isText ? isText.closest('td')?.querySelector('span.open-select-status-modal') : null);
       if (!trigger) return;
 
@@ -327,15 +453,106 @@
       const modal = document.querySelector(targetSel);
       if (!modal) return;
 
-      // tm-file-modal-header 側（あなたが貼ったタイトル行）
       const headerTitle = modal.querySelector('.tm-file-header-title-text');
       if (headerTitle) headerTitle.textContent = `${fileName} のステータスを選択してください`;
 
-      // 旧ヘッダー側（存在する画面もあるため保険）
       const h5Ellipsis = modal.querySelector('h5.modal-title .text-ellipsis');
       if (h5Ellipsis) h5Ellipsis.textContent = fileName;
 
-    }, true); // ← capture（モーダルが開く前に必ず書き換える）
+    }, true);
+  }
+
+  // =====================================================
+  // ファイル情報モーダル：タイトルが「ファイル1」で固定される問題の対策
+  // - モーダル内の .file-info-name（本来のファイル名）を正として、表示直前に毎回反映
+  // - 監視なし（イベント1本）
+  // =====================================================
+  function bindFileInfoModalTitleFixOnce(){
+    if (window.__tmAllFilesFileInfoTitleFixBound) return;
+    window.__tmAllFilesFileInfoTitleFixBound = true;
+
+    document.addEventListener('show.bs.modal', (e) => {
+      const modal = e.target;
+      if (!modal || !(modal instanceof HTMLElement)) return;
+
+      const headerTitle = modal.querySelector('.tm-file-modal-header .tm-file-header-title-text');
+      if (!headerTitle) return;
+
+      const nameEl = modal.querySelector('.modal-header.tm-file-original-header-hidden .file-info-name');
+      const fileName = (nameEl ? (nameEl.textContent || '').trim() : '');
+
+      if (!fileName) return;
+
+      headerTitle.textContent = `${fileName} 情報 ×`;
+    }, true);
+  }
+
+  // =====================================================
+  // SP：ステータス選択モーダルを「メニュー（…）モーダル」と同じ見た目に統一
+  // - tm-file-modal-header を付与（無ければ生成）
+  // - 既存 modal-header を非表示
+  // - data-tm-shadow-bound=1 を付与（枠/影を統一）
+  // ※ /all_akaire_files だけの運用前提（このscript自体が全ファイル用）
+  // =====================================================
+  function bindStatusSelectModalUnifyOnce(){
+    if (window.__tmAllFilesStatusSelectUnifyBound) return;
+    window.__tmAllFilesStatusSelectUnifyBound = true;
+
+    document.addEventListener('show.bs.modal', (e) => {
+      const modal = e.target;
+      if (!modal || !(modal instanceof HTMLElement)) return;
+
+      const content = modal.querySelector('.modal-content');
+      if (!content) return;
+
+      // 「ステータス選択モーダル」だけを対象にする
+      // - ul.status_popup_sp がある
+      // - かつ file-info-name（ファイル情報モーダル）は無い
+      const hasStatusList = !!content.querySelector('ul.status_popup_sp');
+      const isFileInfoModal = !!content.querySelector('.file-info-name, .status_popup_sp.my-3');
+      if (!hasStatusList || isFileInfoModal) return;
+
+      // ファイル名を取る（data-file-name が無い場合は .modal-file-name から取る）
+      const nameFromData = (modal.getAttribute('data-file-name') || '').trim();
+      const nameEl = content.querySelector('.modal-file-name');
+      const fileName = nameFromData || (nameEl ? (nameEl.textContent || '').trim() : '');
+      if (!fileName) return;
+
+      // tm-file-modal-header を用意（無ければ作る）
+      let tmHeader = content.querySelector('.tm-file-modal-header');
+      if (!tmHeader) {
+        tmHeader = document.createElement('div');
+        tmHeader.className = 'tm-file-modal-header';
+        tmHeader.innerHTML = `
+          <a href="javascript:void(0)" class="text-underline text-black back-text-link tm-file-header-back-btn" data-tm-file-header-back="1">戻る</a>
+          <div class="tm-file-header-title">
+            <span class="tm-file-header-title-text"></span>
+          </div>
+        `.trim();
+        content.insertBefore(tmHeader, content.firstChild);
+      }
+
+      const title = tmHeader.querySelector('.tm-file-header-title-text');
+      if (title) title.textContent = `${fileName} のStatusを選択してください`;
+
+      // 既存の header（×ボタン付き）を隠す（DOMは残す＝安全）
+      const origHeader = content.querySelector(':scope > .modal-header');
+      if (origHeader) origHeader.style.display = 'none';
+
+      // メニュー（…）モーダルと同じ枠感に寄せる
+      content.setAttribute('data-tm-shadow-bound', '1');
+
+      // ✅ サイズ固定の対象は「このモーダルだけ」
+      modal.classList.add('tm-allfiles-status-modal');
+
+      // 閉じたら解除（他モーダルに影響させない）
+      const onHidden = () => {
+        modal.classList.remove('tm-allfiles-status-modal');
+        modal.removeEventListener('hidden.bs.modal', onHidden);
+      };
+      modal.addEventListener('hidden.bs.modal', onHidden);
+
+    }, true);
   }
 
   // =====================================================
@@ -396,6 +613,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ★追加：タイトル使い回し防止（タスク1固定になる件）
   bindStatusModalTitleFixOnce();
+
+  // ✅ 追加：ファイル情報モーダルのタイトル固定bug対策
+  bindFileInfoModalTitleFixOnce();
+
+  // ✅ 追加：ステータス選択モーダルも tm-file-modal-header に統一（SP差を解消）
+  bindStatusSelectModalUnifyOnce();
 
   // ★追加：行ハイライト
   bindActiveRowHighlightOnce();
