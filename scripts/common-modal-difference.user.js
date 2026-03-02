@@ -116,6 +116,111 @@ injectCssOnce(
     document.head.appendChild(style);
   }
 
+
+// ========================================================
+// 【ページ名】外部メンバー（プラン制限）モーダル
+// 【目的】このモーダルだけ：白背景・黒文字・ボタン反転＆デザイン強化
+// ※ タイトル行（tm-file-modal-header）は共通scriptで対応済みなので触らない
+// ========================================================
+injectCssOnce(
+  'tm-modal-diff-plan-limit-external-member',
+  [
+    /* --- モーダル本体：白背景・黒文字（ヘッダーは触らない） --- */
+    'html body .modal .modal-content.tm-diff-plan-limit-external-member{',
+    '  background: #fff !important;',
+    '  color: #000 !important;',
+    '}',
+
+    /* --- 本文：黒文字＋読みやすい余白 --- */
+    'html body .modal .modal-content.tm-diff-plan-limit-external-member .modal-body{',
+    '  color: #000 !important;',
+    '  padding: 18px 18px 22px 18px !important;',
+    '}',
+
+'html body .modal .modal-content.tm-diff-plan-limit-external-member .modal-body p{',
+'  color: #000 !important;',
+'  font-weight: 800 !important;',
+'  line-height: 1.25 !important;',        // ← 行間を詰める（詰めすぎない）
+'  max-width: none !important;',
+'  width: 100% !important;',
+'  white-space: nowrap !important;',
+'  word-break: keep-all !important;',
+'  overflow: hidden !important;',
+'  text-overflow: ellipsis !important;',
+'  text-align: center !important;',
+'  margin: 0 0 6px 0 !important;',        // ← 段落間の余白を狭く
+'}',
+
+/* 2つ目の p.mb-3 の余白が広がるのを抑える */
+'html body .modal .modal-content.tm-diff-plan-limit-external-member .modal-body p.mb-3{',
+'  margin-bottom: 6px !important;',
+'}',
+
+    /* --- ボタン：色反転＋かっこよく（pill + shadow） --- */
+    'html body .modal .modal-content.tm-diff-plan-limit-external-member .modal-body a.btn{',
+    '  display: inline-flex !important;',
+    '  align-items: center !important;',
+    '  justify-content: center !important;',
+    '  min-width: 220px !important;',
+    '  height: 44px !important;',
+    '  padding: 0 22px !important;',
+    '  border-radius: 999px !important;',
+    '  font-weight: 900 !important;',
+    '  letter-spacing: .02em !important;',
+    '  box-shadow: 0 10px 24px rgba(0,0,0,.18) !important;',
+    '}',
+
+/* 通常：黒背景＋白文字＋黒枠 */
+'html body .modal .modal-content.tm-diff-plan-limit-external-member .modal-body a.btn.btn-primary{',
+'  background: #000 !important;',
+'  border: 2px solid #000 !important;',
+'  color: #fff !important;',
+'}',
+
+/* hover：白背景＋黒文字（反転） */
+'html body .modal .modal-content.tm-diff-plan-limit-external-member .modal-body a.btn.btn-primary:hover{',
+'  background: #fff !important;',
+'  border-color: #000 !important;',
+'  color: #000 !important;',
+'  transition: all .18s ease !important;',
+'}',
+
+    /* SP微調整 */
+    '@media (max-width: 1023px){',
+    '  html body .modal .modal-content.tm-diff-plan-limit-external-member .modal-body a.btn{',
+    '    min-width: 200px !important;',
+    '    height: 40px !important;',
+    '    font-size: 0.95em !important;',
+    '  }',
+    '}'
+  ].join('\n')
+);
+
+// --- 該当モーダルだけに class を付与（見た目差分対象の特定） ---
+function markPlanLimitExternalMemberModal() {
+  var modals = document.querySelectorAll('.modal .modal-content[data-tm-shadow-bound="1"]');
+  if (!modals || !modals.length) return;
+
+  modals.forEach(function(modal){
+    if (modal.classList.contains('tm-diff-plan-limit-external-member')) return;
+
+    // 「外部メンバー機能は、Standardプラン以上...」の文言で特定（このモーダルだけ）
+    var p = modal.querySelector('.modal-body p.font-weight-bold');
+    if (!p) return;
+
+    var text = (p.textContent || '').replace(/\s+/g, '');
+    if (text.indexOf('外部メンバー機能は') === -1) return;
+
+    modal.classList.add('tm-diff-plan-limit-external-member');
+  });
+}
+
+// モーダルはクリック後にDOMが組まれるので、クリックごとに軽く再判定（既存方針と同じ）
+markPlanLimitExternalMemberModal();
+document.addEventListener('click', function(){
+  setTimeout(markPlanLimitExternalMemberModal, 0);
+}, true);
+
   // ========================================================
   // 【ページ名】プロジェクト > 通知設定
   // 【場所】プロジェクト詳細画面の「通知設定」モーダルタイトル行
@@ -928,43 +1033,104 @@ adjustNotifyTextByState();
   // ❷ タイトル内の「Status」を「ステータス」に統一
   // ========================================================
 
-  function unifyStatusModal() {
-    var modals = document.querySelectorAll('.modal-content[data-tm-shadow-bound="1"]');
-    if (!modals.length) return;
+function unifyStatusModal() {
+  // =====================================================
+  // 変更点：
+  // ① data-tm-shadow-bound=1 のモーダルだけでなく
+  //    「表示中のモーダル（.modal.show）」も拾う
+  // ② /all_akaire_files の SP ステータスモーダル（.modal-file-name がある方）は
+  //    data-tm-shadow-bound=1 を付けてから、既存処理を効かせる
+  // =====================================================
 
-    modals.forEach(function(modal){
+  var list = [];
 
-      // -----------------------------
-      // ❷ タイトル文言を統一
-      // -----------------------------
-      var title = modal.querySelector('.tm-file-header-title-text');
-      if (title && title.textContent.indexOf('Status') !== -1) {
-        title.textContent = title.textContent.replace(/Status/g, 'ステータス');
+  // 既存対象（司令塔対象）
+  document.querySelectorAll('.modal-content[data-tm-shadow-bound="1"]').forEach(function(m){
+    list.push(m);
+  });
+
+  // 追加対象：表示中のモーダル（対象外モーダルを拾うため）
+  document.querySelectorAll('.modal.show .modal-content').forEach(function(m){
+    if (list.indexOf(m) === -1) list.push(m);
+  });
+
+  if (!list.length) return;
+
+  list.forEach(function(modal){
+
+    // ✅ 全ファイルSPのステータス選択モーダルを対象に含める
+    // （あなたが貼った DOM：.modal-file-name がある / ul.status_popup_sp がある）
+    try{
+      var p = location.pathname || '';
+      var isAllFiles = (p === '/all_akaire_files' || p.indexOf('/all_akaire_files/') === 0);
+      var isSp = (window.innerWidth <= 1023);
+
+      if (isAllFiles && isSp) {
+        var hasStatusList = !!modal.querySelector('ul.status_popup_sp');
+        var hasFileName = !!modal.querySelector('.modal-file-name');
+        var isFileInfo = !!modal.querySelector('.file-info-name, .status_popup_sp.my-3');
+
+        if (hasStatusList && hasFileName && !isFileInfo) {
+          // 司令塔CSS/処理対象に入れる
+          modal.setAttribute('data-tm-shadow-bound', '1');
+
+          // 既存の modal-header を隠し、tm-file-modal-header を作る（無ければ）
+          var nameEl = modal.querySelector('.modal-file-name');
+          var fileName = nameEl ? (nameEl.textContent || '').trim() : '';
+
+          if (fileName) {
+            var tmHeader = modal.querySelector(':scope > .tm-file-modal-header');
+            if (!tmHeader) {
+              tmHeader = document.createElement('div');
+              tmHeader.className = 'tm-file-modal-header';
+              tmHeader.innerHTML =
+                '<a href="javascript:void(0)" class="text-underline text-black back-text-link tm-file-header-back-btn" data-tm-file-header-back="1">戻る</a>' +
+                '<div class="tm-file-header-title">' +
+                  '<span class="tm-file-header-title-text"></span>' +
+                '</div>';
+              modal.insertBefore(tmHeader, modal.firstChild);
+            }
+
+            var titleEl = tmHeader.querySelector('.tm-file-header-title-text');
+            if (titleEl) titleEl.textContent = fileName + ' のステータスを選択してください';
+
+            var origHeader = modal.querySelector(':scope > .modal-header');
+            if (origHeader) origHeader.style.display = 'none';
+          }
+        }
       }
+    }catch(e){}
 
-      var subTitle = modal.querySelector('.default-project-name');
-      if (subTitle && subTitle.textContent.indexOf('Status') !== -1) {
-        subTitle.textContent = subTitle.textContent.replace(/Status/g, 'ステータス');
-      }
+    // -----------------------------
+    // ❷ タイトル文言を統一（既存処理そのまま）
+    // -----------------------------
+    var title = modal.querySelector('.tm-file-header-title-text');
+    if (title && title.textContent.indexOf('Status') !== -1) {
+      title.textContent = title.textContent.replace(/Status/g, 'ステータス');
+    }
 
-      // -----------------------------
-      // ❶ active行に現在表示を付与
-      // -----------------------------
-      var active = modal.querySelector('.outer_status_newstyle .li-status.active');
-      if (!active) return;
+    var subTitle = modal.querySelector('.default-project-name');
+    if (subTitle && subTitle.textContent.indexOf('Status') !== -1) {
+      subTitle.textContent = subTitle.textContent.replace(/Status/g, 'ステータス');
+    }
 
-      // 既に付与済みなら何もしない
-      if (active.querySelector('.current-status-text')) return;
+    // -----------------------------
+    // ❶ active行に現在表示を付与（既存処理そのまま）
+    // -----------------------------
+    var active = modal.querySelector('.outer_status_newstyle .li-status.active');
+    if (!active) return;
 
-      var span = document.createElement('span');
-        span.className = 'current-status-text';
-        span.textContent = '（現在のステータス）';
-        span.style.marginLeft = '8px';
-        span.style.fontWeight = '800';
+    if (active.querySelector('.current-status-text')) return;
 
-      active.appendChild(span);
-    });
-  }
+    var span = document.createElement('span');
+    span.className = 'current-status-text';
+    span.textContent = '（現在のステータス）';
+    span.style.marginLeft = '8px';
+    span.style.fontWeight = '800';
+
+    active.appendChild(span);
+  });
+}
 
   // 初回
   unifyStatusModal();
