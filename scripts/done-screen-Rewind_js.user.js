@@ -1,13 +1,13 @@
 // ==UserScript==
-// @name         校正画面｜動画を◀▶で5秒早送｜巻き戻す※screen-Rewind_js.user.js
+// @name         済｜校正画面｜動画を◀▶で5秒早送｜巻き戻す※done-screen-Rewind_js.user.js
 // @namespace    akapon
 // @version      20260227 1800
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-Rewind_js.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/screen-Rewind_js.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-Rewind_js.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-screen-Rewind_js.user.js
 // ==/UserScript==
 
 (() => {
