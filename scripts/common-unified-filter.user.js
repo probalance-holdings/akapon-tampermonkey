@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         アカポン（共通｜検索・絞り込み）※akapon-unified-filter.user.js
+// @name         共通｜検索・絞り込み※common-unified-filter.user.js
 // @namespace    akapon
 // @version      20260225 1300
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @run-at       document-idle
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-unified-filter.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/akapon-unified-filter.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-unified-filter.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/common-unified-filter.user.js
 // ==/UserScript==
 
 (() => {
@@ -150,6 +151,9 @@ const PAGE_CONFIG = {
     if (p === '/projects' || /^\/projects\/\d+\/task/.test(p)) return (p === '/projects') ? 'projects' : 'tasks';
     if (/^\/akaire_file\/\d+\/project_akaire_files/.test(p)) return 'files';
     if (/^\/akaire_file\/\d+\/task_akaire_files/.test(p)) return 'files';
+
+    // ★追加：全ファイル一覧（共通UIを files 扱いで適用）
+    if (p === '/all_akaire_files' || p.startsWith('/all_akaire_files/')) return 'files';
 
     if (p === '/users' || p.startsWith('/users/')) return 'users';
     if (p === '/collaborators' || p.startsWith('/collaborators/')) return 'collaborators';
