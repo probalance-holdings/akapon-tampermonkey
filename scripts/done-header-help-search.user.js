@@ -1,13 +1,14 @@
 // ==UserScript==
-// @name         ヘッダー｜検索機能※header-help-search.user.js
+// @name         済｜ヘッダー｜検索機能※done-header-help-search.user.js
 // @namespace    akapon
 // @version      20260227 1800
 // @match        https://member.createcloud.jp/*
+// @match        https://membernew.createcloud.jp/*
 // @match        https://akapon.jp/*
 // @match        https://kanritools.com/*
 // @run-at       document-start
-// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-help-search.user.js
-// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/header-help-search.user.js
+// @updateURL    https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-header-help-search.user.js
+// @downloadURL  https://raw.githubusercontent.com/probalance-holdings/akapon-tampermonkey/main/scripts/done-header-help-search.user.js
 // ==/UserScript==
 
 (() => {
