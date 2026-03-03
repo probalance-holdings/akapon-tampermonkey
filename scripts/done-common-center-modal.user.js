@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         済｜共通｜削除や確認系の画面中央modal※done-common-center-modal.user.js
 // @namespace    akapon
-// @version      20260227 1500
+// @version      20260303 1000
 // @match        https://member.createcloud.jp/*
 // @match        https://membernew.createcloud.jp/*
 // @run-at       document-start
@@ -29,7 +29,61 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions {
 　－　通知設定モーダル（*****の通知設定がOFFになりました。）は3秒で自動close
 　－　プロジェクト　/　タスク　/　ファイル削除後のモーダル　「削除されました。」のみとしOKボタンは削除。3秒で自動close
 　－　ステータス変更後のmodalボタンが「確認する」になっているので「変更する」に変更
+
 ========================================================= */
+
+// =========================================================
+// 【エンジニア向け指示】期限/ステータス更新のSweetAlert2通知がページ間で統一されない件
+//
+// ■ 現象
+// - 「期限を更新しました。」の通知が「Statusを更新しました。」と同一デザインになっていない。
+// - /akaire_file/... と /projects で、同じ更新操作でも swal2 の構造・クラス・挙動が異なる。
+// - consoleログ上、「期限を更新しました。」は .swal2-popup ではなく
+//   .swal2-container（swal2-center / backdrop-show など）側に文言が乗るケースが確認できた。
+//   → DOM構造が異なるため、Tampermonkey側の共通CSS条件では完全一致しない。
+//
+// ■ 重要要件（ページが変わっても必ず統一）
+// - 画面（/projects, /akaire_file/... 等）が変わっても、以下を「完全に同一」にすること：
+//   1) HTML構造（title/html-container の使い分け、wrapper階層、customClass付与）
+//   2) CSS（ヘッダーのグラデ、文字色、フォントウェイト、padding/margin、角丸、影、幅）
+//   3) 動き（OKボタン有無、表示時間、オートクローズ、クリックで閉じる条件、backdrop挙動）
+//
+// ■ 統一の定義（仕様）
+// - 通知系（更新完了）
+//   - OKボタンなし（showConfirmButton: false）
+//   - 表示は3秒（timer: 3000）で自動close
+//   - 見た目は「Statusを更新しました。」と同一テンプレート（ヘッダー/本文領域）
+// - 確認系（変更確認）
+//   - ページによって出たり出なかったりしないよう、出す場合は共通テンプレートで統一
+//   - もしくは仕様として「確認は出さない」に統一するなら、全ページで完全に抑止する
+//
+// ■ 原因候補（想定）
+// 1) エンドポイント/呼び出し元JSがページ別に分岐し、Swal.fire の引数が不統一
+// 2) 片方は title、片方は html を使っている（または container直下へtextが入る）
+// 3) customClass がページで違う/無い → CSSの適用条件が揃わない
+// 4) timer / showConfirmButton / backdrop / allowOutsideClick がページで違う
+//
+// ■ 実装方針（専門的に）
+// - SweetAlert2の表示処理を「単一の共通ファクトリ関数」に集約し、全ページでそれを呼ぶ。
+//   例：notifyStatusUpdated(), notifyDeadlineUpdated(), confirmStatusChange() 等
+// - 各関数は必ず同一のテンプレート（title/html構造）＋同一の customClass を付与すること。
+//   - 例：customClass: { popup: 'tm-swal-common-notify', title: 'tm-swal-title', htmlContainer: 'tm-swal-body' }
+//   - 期限/ステータスの差分は “文言だけ” に限定する（CSSや構造は変えない）。
+// - timer / showConfirmButton / backdrop / allowOutsideClick は通知・確認の分類ごとに固定値で統一。
+// - 既存CSSがある場合も「共通クラスに対してのみ」スタイルを当て、ページ固有CSSは排除する。
+//
+// ■ 差分確認（実DOMの確定）
+// - 「Statusを更新しました。」表示中に outerHTML を取得：
+//   copy(document.querySelector('.swal2-container, .swal2-popup')?.outerHTML || 'not found')
+// - 「期限を更新しました。」でも同様に取得。
+// - ページを跨いで（/projects と /akaire_file/...）同じ取得を行い、
+//   DOM階層・クラス・title/htmlの差分が出ていない状態になるまで統一すること。
+//
+// ■ 注意（ログ警告）
+// - SweetAlert2: allowOutsideClick requires backdrop=true の警告が出ているため、
+//   backdrop / allowOutsideClick の組み合わせも共通関数側で正規化すること。
+// =========================================================
+
 
   if (window.__tmSwalCommonV3Booted) return;
   window.__tmSwalCommonV3Booted = true;
@@ -403,6 +457,46 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-title {
     font-weight: 400 !important;
 }
 
+/* =========================================================
+   期限更新 完了モーダル専用：Status更新完了と同じヘッダーデザインに固定
+   - 他モーダルへ影響しない（tm-swal-deadline-updated のみ）
+========================================================= */
+/* =========================================================
+   期限更新 完了モーダル専用：Status更新完了と同じデザインに固定
+   - 他モーダルへ影響しない（tm-swal-deadline-updated のみ）
+   - 文言が title 側 / html-container 側どちらでも同じ見た目にする
+========================================================= */
+
+/* title が出ている場合：ヘッダー化（最強で固定） */
+body .swal2-container.swal2-center
+.swal2-popup.new_alert_popup.tm-swal-deadline-updated
+.swal2-title{
+  display: block !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 14px !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
+}
+
+/* もし title が空で html-container に文言が入るタイプでも、同じヘッダー見た目にする */
+body .swal2-container.swal2-center
+.swal2-popup.new_alert_popup.tm-swal-deadline-updated
+.swal2-html-container{
+  display: block !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  background: linear-gradient(90deg, #1e3c72, #2b2b2b) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 14px !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
+}
+
 body .swal2-container.swal2-center .swal2-popup.new_alert_popup {
     width: min(650px, calc(100vw - 40px)) !important;
     max-width: min(650px, calc(100vw - 40px)) !important;
@@ -713,10 +807,64 @@ body .modal-content.list-task-modal.tm-modal-theme-white{
 
 })();
 
+  // =========================================================
+  // Swalを安全に閉じる（通知系で共通利用）
+  // =========================================================
+  function closeSwalPopupSafely(popup) {
+    try {
+      if (window.Swal && typeof window.Swal.close === 'function') {
+        window.Swal.close();
+        return;
+      }
+      if (window.swal && typeof window.swal.close === 'function') {
+        window.swal.close();
+        return;
+      }
+      const container = popup && popup.closest ? popup.closest('.swal2-container') : null;
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      } else if (popup && popup.parentNode) {
+        popup.parentNode.removeChild(popup);
+      }
+    } catch (e) {
+      // 失敗してもアプリ側には影響させない
+    }
+  }
+
   function processPopup(popup) {
     if (!popup || popup.dataset.tmSwalCommonApplied === '1') return;
 
     popup.dataset.tmSwalCommonApplied = '1';
+
+// ▼ 期限更新モーダル（OKボタンあり）を「通知」扱いにして3秒自動クローズ（OKボタンなし）
+const titleEl = popup.querySelector('.swal2-title');
+const titleText = (titleEl?.innerText || titleEl?.textContent || '').trim();
+
+if (titleText === '期限を更新しました。' && popup.classList.contains('new_alert_popup')) {
+
+  // ★期限更新だけ「Status更新完了」と同じヘッダーデザインを強制
+  popup.classList.add('tm-swal-deadline-updated');
+
+  const actions = popup.querySelector('.swal2-actions');
+  if (actions) actions.style.display = 'none';
+
+  // ★システム側の timer:1000 等で1秒で閉じる場合があるため、ここで 3000 に上書き
+  try {
+    if (window.Swal && typeof window.Swal.isVisible === 'function' && window.Swal.isVisible()) {
+      if (typeof window.Swal.update === 'function') {
+        window.Swal.update({ timer: 3000, timerProgressBar: false });
+      }
+      if (typeof window.Swal.stopTimer === 'function') window.Swal.stopTimer();
+      if (typeof window.Swal.resumeTimer === 'function') window.Swal.resumeTimer();
+    }
+  } catch (e) {}
+
+  // ★保険：updateが効かない環境でも3秒後に閉じる
+  setTimeout(() => {
+    if (!document.body.contains(popup)) return;
+    closeSwalPopupSafely(popup);
+  }, 3000);
+}
 
     // ▼ 通知だけの new_alert_popup は 3秒後に自動クローズ
     if (isNotificationPopup(popup)) {
@@ -725,26 +873,11 @@ body .modal-content.list-task-modal.tm-modal-theme-white{
         if (!document.body.contains(popup)) return;
         if (!isNotificationPopup(popup)) return;
 
-        try {
-          if (window.Swal && typeof window.Swal.close === 'function') {
-            window.Swal.close();
-          } else if (window.swal && typeof window.swal.close === 'function') {
-            window.swal.close();
-          } else {
-            const container = popup.closest('.swal2-container');
-            if (container && container.parentNode) {
-              container.parentNode.removeChild(container);
-            } else if (popup.parentNode) {
-              popup.parentNode.removeChild(popup);
-            }
-          }
-        } catch (e) {
-          // 失敗してもアプリ側には影響させない
-        }
+        closeSwalPopupSafely(popup);
       }, 3000);
     }
 
-    // ▼ プロジェクトStatus変更モーダル専用：「確認する」→「変更する」
+    // ▼ プロジェクトStatus変更モーダル専用：「確認する」→「変更する」＋表示せず自動で更新
     const statusHtml = popup.querySelector('.swal2-html-container');
     if (statusHtml) {
       const text = (statusHtml.innerText || statusHtml.textContent || '').replace(/\s+/g, '');
@@ -752,6 +885,19 @@ body .modal-content.list-task-modal.tm-modal-theme-white{
         const confirmBtn = popup.querySelector('.swal2-confirm');
         if (confirmBtn) {
           confirmBtn.textContent = '変更する';
+
+          // projects 側だけ確認モーダルが出る → 表示せずに自動クリックして次の「変更されました」へ
+          if (popup.dataset.tmAutoConfirmStatus !== '1') {
+            popup.dataset.tmAutoConfirmStatus = '1';
+
+            // フラッシュ防止
+            popup.style.opacity = '0';
+            popup.style.pointerEvents = 'none';
+
+            setTimeout(() => {
+              try { confirmBtn.click(); } catch (e) {}
+            }, 0);
+          }
         }
       }
     }
