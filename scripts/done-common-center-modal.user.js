@@ -41,12 +41,21 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions {
 // - consoleログ上、「期限を更新しました。」は .swal2-popup ではなく
 //   .swal2-container（swal2-center / backdrop-show など）側に文言が乗るケースが確認できた。
 //   → DOM構造が異なるため、Tampermonkey側の共通CSS条件では完全一致しない。
+// - 期限更新後、一覧の期限表示（td.td_expiration）がリロードしないと更新されない。
+//   → 保存自体は成功しているが、成功後にフロント側のDOM差し替え（反映）が行われていない可能性が高い。
 //
 // ■ 重要要件（ページが変わっても必ず統一）
 // - 画面（/projects, /akaire_file/... 等）が変わっても、以下を「完全に同一」にすること：
 //   1) HTML構造（title/html-container の使い分け、wrapper階層、customClass付与）
 //   2) CSS（ヘッダーのグラデ、文字色、フォントウェイト、padding/margin、角丸、影、幅）
 //   3) 動き（OKボタン有無、表示時間、オートクローズ、クリックで閉じる条件、backdrop挙動）
+//
+// ■ 追加要件（期限更新はリロード無しで即時反映）
+// - 期限を保存（API成功）した直後に、対象行の期限表示をDOMへ即時反映すること。
+//   - 対象：一覧の <td class="td_expiration ...">（クリック元のセル or taskId/fileId等で特定）
+//   - 反映内容：期限日（表示文字列）をセル内へ挿入し、必要なら d-none を解除、data属性も更新。
+//   - 既存実装で一覧再取得を行うなら、部分再描画 or 対象行のみ更新に寄せ、全ページリロードは不要にする。
+// - /projects と /akaire_file/... の双方で同一挙動になるよう、期限更新後のUI反映も共通関数化する。
 //
 // ■ 統一の定義（仕様）
 // - 通知系（更新完了）
@@ -62,6 +71,7 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions {
 // 2) 片方は title、片方は html を使っている（または container直下へtextが入る）
 // 3) customClass がページで違う/無い → CSSの適用条件が揃わない
 // 4) timer / showConfirmButton / backdrop / allowOutsideClick がページで違う
+// 5) 期限保存成功後のコールバックでDOM更新していない（もしくは更新対象を特定できていない）
 //
 // ■ 実装方針（専門的に）
 // - SweetAlert2の表示処理を「単一の共通ファクトリ関数」に集約し、全ページでそれを呼ぶ。
@@ -70,6 +80,8 @@ body .swal2-container.swal2-center .swal2-popup.new_alert_popup .swal2-actions {
 //   - 例：customClass: { popup: 'tm-swal-common-notify', title: 'tm-swal-title', htmlContainer: 'tm-swal-body' }
 //   - 期限/ステータスの差分は “文言だけ” に限定する（CSSや構造は変えない）。
 // - timer / showConfirmButton / backdrop / allowOutsideClick は通知・確認の分類ごとに固定値で統一。
+// - 期限更新の成功時は、共通関数（例：applyDeadlineToListRow(...)）で対象セルを特定しDOM反映まで行う。
+//   ページ別分岐でDOMを触らないようにし、必ず同一の反映ロジックを通すこと。
 // - 既存CSSがある場合も「共通クラスに対してのみ」スタイルを当て、ページ固有CSSは排除する。
 //
 // ■ 差分確認（実DOMの確定）
